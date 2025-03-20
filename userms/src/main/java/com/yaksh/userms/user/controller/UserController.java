@@ -1,6 +1,5 @@
 package com.yaksh.userms.user.controller;
 
-
 import com.yaksh.userms.user.DTO.ResponseDataDTO;
 import com.yaksh.userms.user.model.User;
 import com.yaksh.userms.user.service.UserBookingService;

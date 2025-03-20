@@ -1,6 +1,5 @@
 package com.yaksh.trainms.train.controller;
 
-
 import com.yaksh.trainms.train.DTO.ResponseDataDTO;
 import com.yaksh.trainms.train.model.Train;
 import com.yaksh.trainms.train.service.TrainService;
@@ -48,8 +47,9 @@ public class TrainController {
      */
     @PostMapping("/addTrain")
     public ResponseEntity<ResponseDataDTO> addTrain(@RequestBody Train newTrain) {
-        // Delegates the add train logic to the trainService and returns the response
+        // Logs the details of the new train for debugging or tracking purposes
         log.info(newTrain.toString());
+        // Delegates the add train logic to the trainService and returns the response
         return ResponseEntity.ok(trainService.addTrain(newTrain));
     }
 
@@ -77,8 +77,18 @@ public class TrainController {
         return ResponseEntity.ok(trainService.updateTrain(updatedTrain));
     }
 
+    /**
+     * Checks if a train can be booked based on its PRN, source, destination, and travel date.
+     *
+     * @param trainPrn    The unique PRN (Passenger Reservation Number) of the train.
+     * @param source      The source station of the train.
+     * @param destination The destination station of the train.
+     * @param travelDate  The date of travel.
+     * @return A ResponseEntity containing the Train object if it can be booked.
+     */
     @GetMapping("/canBeBooked")
-    public ResponseEntity<Train> canBeBooked(@RequestParam String trainPrn,@RequestParam String source,@RequestParam String destination,@RequestParam LocalDate travelDate){
-        return ResponseEntity.ok(trainService.canBeBooked(trainPrn,source,destination,travelDate));
+    public ResponseEntity<Train> canBeBooked(@RequestParam String trainPrn, @RequestParam String source, @RequestParam String destination, @RequestParam LocalDate travelDate) {
+        // Delegates the check booking logic to the trainService and returns the response
+        return ResponseEntity.ok(trainService.canBeBooked(trainPrn, source, destination, travelDate));
     }
 }

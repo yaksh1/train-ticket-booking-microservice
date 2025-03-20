@@ -75,13 +75,14 @@ public class UserBookingServiceImpl implements UserBookingService {
     @Override
     public ResponseDataDTO loginUser(String userEmail, String password) {
         log.info("Login attempt for user: {}", userEmail);
-        // check if email is valid
+        // Check if the email is valid
         if (!validationChecks.isValidEmail(userEmail.toLowerCase())) {
-            log.warn("Signup failed - email is not valid: {}", userEmail);
+            log.warn("Login failed - email is not valid: {}", userEmail);
             throw new CustomException(ResponseStatus.EMAIL_NOT_VALID);
         }
         return userRepositoryV2.findByUserEmail(userEmail.toLowerCase())
                 .map(user -> {
+                    // Validate the provided password against the stored hashed password
                     if (!userServiceUtil.checkPassword(password, user.getHashedPassword())) {
                         throw new CustomException(ResponseStatus.PASSWORD_INCORRECT);
                     }
@@ -100,7 +101,7 @@ public class UserBookingServiceImpl implements UserBookingService {
     @Override
     public ResponseDataDTO signupUser(String userEmail, String password) {
         log.info("Signup attempt for user: {}", userEmail);
-        // check if email is valid
+        // Check if the email is valid
         if (!validationChecks.isValidEmail(userEmail)) {
             log.warn("Signup failed - email is not valid: {}", userEmail);
             throw new CustomException(ResponseStatus.EMAIL_NOT_VALID);
@@ -162,7 +163,7 @@ public class UserBookingServiceImpl implements UserBookingService {
         requestBody.put("travelDate", dateOfTravel);
         requestBody.put("numberOfSeatsToBeBooked", numberOfSeatsToBeBooked);
 
-// Create HttpHeaders
+        // Create HttpHeaders
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -178,7 +179,9 @@ public class UserBookingServiceImpl implements UserBookingService {
         );
 
         try {
-            String ticketBookedId =(String) bookingResponse.getBody().getData();
+            // Get the booked ticket ID from the response
+            String ticketBookedId = (String) bookingResponse.getBody().getData();
+
             // Update the user's booked ticket list
             loggedInUser.getTicketsBookedIds().add(ticketBookedId);
             log.info("Updating logged in user ticket list");
@@ -208,10 +211,14 @@ public class UserBookingServiceImpl implements UserBookingService {
             log.warn("Unauthorized ticket fetch attempt - no logged in user");
             throw new CustomException("Please log in to book the ticket", ResponseStatus.USER_NOT_FOUND);
         }
+
+        // Build the URL for the ticket-fetching API
         String url = UriComponentsBuilder.fromUriString("http://localhost:8083/v1/tickets/fetchAllTickets")
                 .queryParam("ticketIds", loggedInUser.getTicketsBookedIds())
                 .toUriString();
-        return restTemplate.exchange(url,HttpMethod.GET,null,ResponseDataDTO.class).getBody();
+
+        // Call the API and return the response
+        return restTemplate.exchange(url, HttpMethod.GET, null, ResponseDataDTO.class).getBody();
     }
 
     /**
@@ -222,18 +229,22 @@ public class UserBookingServiceImpl implements UserBookingService {
      */
     @Override
     public ResponseDataDTO cancelTicket(String idOfTicketToCancel) {
+        log.info("Cancelling ticket with ID: {}", idOfTicketToCancel);
+
         // Ensure the user is logged in
         if (loggedInUser == null) {
             log.warn("Unauthorized ticket cancellation attempt - no logged in user");
             throw new CustomException("Please log in to book the ticket", ResponseStatus.USER_NOT_FOUND);
         }
-        ResponseEntity<ResponseDataDTO> ticketCancelResponse = restTemplate.exchange(
-                "http://localhost:8083/v1/tickets/"+idOfTicketToCancel,
-                HttpMethod.DELETE, null, ResponseDataDTO.class
 
+        // Call the ticket cancellation API
+        ResponseEntity<ResponseDataDTO> ticketCancelResponse = restTemplate.exchange(
+                "http://localhost:8083/v1/tickets/" + idOfTicketToCancel,
+                HttpMethod.DELETE, null, ResponseDataDTO.class
         );
+
         // Remove the ticket from the user's booked list
-        loggedInUser.getTicketsBookedIds().removeIf(ticketId-> ticketId.equalsIgnoreCase(idOfTicketToCancel));
+        loggedInUser.getTicketsBookedIds().removeIf(ticketId -> ticketId.equalsIgnoreCase(idOfTicketToCancel));
         log.info("Updating logged in user ticket list");
 
         // Save the updated user in the database
@@ -243,7 +254,12 @@ public class UserBookingServiceImpl implements UserBookingService {
         return new ResponseDataDTO(true, String.format("Ticket ID: %s has been deleted.", idOfTicketToCancel));
     }
 
-
+    /**
+     * Fetches a ticket by its ID for the logged-in user.
+     *
+     * @param idOfTicketToFind The ID of the ticket to fetch.
+     * @return ResponseDataDTO containing the ticket details.
+     */
     @Override
     public ResponseDataDTO fetchTicketById(String idOfTicketToFind) {
         log.info("Fetching ticket by ID: {}", idOfTicketToFind);
@@ -253,7 +269,10 @@ public class UserBookingServiceImpl implements UserBookingService {
             log.warn("Unauthorized ticket fetch attempt - no logged in user");
             throw new CustomException("Please log in to book the ticket", ResponseStatus.USER_NOT_FOUND);
         }
-        return restTemplate.exchange("http://localhost:8083/v1/tickets/"+idOfTicketToFind,HttpMethod.GET,null,ResponseDataDTO.class).getBody();
+
+        // Call the API and return the response
+        return restTemplate.exchange("http://localhost:8083/v1/tickets/" + idOfTicketToFind,
+                HttpMethod.GET, null, ResponseDataDTO.class).getBody();
     }
 
     /**
@@ -265,6 +284,8 @@ public class UserBookingServiceImpl implements UserBookingService {
      */
     @Override
     public ResponseDataDTO rescheduleTicket(String ticketId, LocalDate updatedTravelDate) {
+        log.info("Rescheduling ticket with ID: {} to new date: {}", ticketId, updatedTravelDate);
+
         // Ensure the user is logged in
         if (loggedInUser == null) {
             log.warn("Unauthorized ticket rescheduling attempt - no logged in user");
@@ -276,9 +297,10 @@ public class UserBookingServiceImpl implements UserBookingService {
             throw new CustomException("Date of travel cannot be in the past", ResponseStatus.INVALID_DATA);
         }
 
-
-
-        restTemplate.exchange("http://localhost:8083/v1/tickets/rescheduleTicket/"+ticketId+"?updatedTravelDate="+updatedTravelDate,HttpMethod.PUT,null,ResponseDataDTO.class);
+        // Call the ticket rescheduling API
+        restTemplate.exchange("http://localhost:8083/v1/tickets/rescheduleTicket/" + ticketId +
+                        "?updatedTravelDate=" + updatedTravelDate, HttpMethod.PUT,
+                null, ResponseDataDTO.class);
 
         return new ResponseDataDTO(true, "Travel date updated successfully");
     }

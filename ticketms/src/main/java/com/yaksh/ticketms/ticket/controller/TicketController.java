@@ -16,38 +16,62 @@ import java.util.Optional;
 @RequestMapping("/v1/tickets")
 public class TicketController {
 
+    // Service layer dependency to handle ticket-related operations
     private final TicketService ticketService;
 
+    /**
+     * Finds a ticket by its ID.
+     * @param ticketId The ID of the ticket to retrieve.
+     * @return ResponseDataDTO containing the ticket details.
+     */
     @GetMapping("/{ticketId}")
     public ResponseEntity<ResponseDataDTO> findTicketById(@PathVariable String ticketId) {
+        // Fetch and return the ticket details based on the provided ticket ID
         return ResponseEntity.ok(ticketService.findTicketById(ticketId));
     }
 
+    /**
+     * Fetches multiple tickets based on a list of ticket IDs.
+     * @param ticketIds List of ticket IDs to retrieve.
+     * @return ResponseDataDTO containing the details of the tickets.
+     */
     @GetMapping("fetchAllTickets")
     public ResponseEntity<ResponseDataDTO> fetchAllTickets(@RequestParam List<String> ticketIds) {
+        // Fetch and return the details of all tickets matching the provided IDs
         return ResponseEntity.ok(ticketService.fetchAllTickets(ticketIds));
     }
 
     /**
      * Deletes a ticket by its ID.
      * @param ticketId The ID of the ticket to delete.
-     * @return Success message upon deletion.
+     * @return ResponseDataDTO containing a success message upon deletion.
      */
     @DeleteMapping("/{ticketId}")
     public ResponseEntity<ResponseDataDTO> cancelTicket(@PathVariable String ticketId) {
+        // Cancel the ticket with the specified ID and return a success message
         return ResponseEntity.ok(ticketService.cancelTicket(ticketId));
     }
 
+    /**
+     * Creates a new ticket.
+     * @param ticket The ticket object containing the details of the new ticket.
+     * @return ResponseDataDTO containing the details of the newly created ticket.
+     */
     @PostMapping("/createTicket")
     public ResponseEntity<ResponseDataDTO> createNewTicket(@RequestBody Ticket ticket) {
+        // Create a new ticket using the provided ticket details and return the result
         return ResponseEntity.ok(ticketService.createNewTicket(ticket));
     }
 
+    /**
+     * Reschedules a ticket to a new travel date.
+     * @param ticketId The ID of the ticket to reschedule.
+     * @param updatedTravelDate The new travel date for the ticket.
+     * @return ResponseDataDTO containing the updated ticket details.
+     */
     @PutMapping("/rescheduleTicket/{ticketId}")
-    public ResponseEntity<ResponseDataDTO> rescheduleTicket(@PathVariable String ticketId,@RequestParam LocalDate updatedTravelDate){
-        return ResponseEntity.ok(ticketService.rescheduleTicket(ticketId,updatedTravelDate));
+    public ResponseEntity<ResponseDataDTO> rescheduleTicket(@PathVariable String ticketId, @RequestParam LocalDate updatedTravelDate) {
+        // Update the travel date of the specified ticket and return the updated ticket details
+        return ResponseEntity.ok(ticketService.rescheduleTicket(ticketId, updatedTravelDate));
     }
-
-
-
 }

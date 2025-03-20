@@ -1,6 +1,5 @@
 package com.yaksh.trainms.seatManagement.service;
 
-
 import com.yaksh.trainms.seatManagement.DTO.TicketRequestDTO;
 import com.yaksh.trainms.train.DTO.ResponseDataDTO;
 import com.yaksh.trainms.train.enums.ResponseStatus;
@@ -27,50 +26,65 @@ public class SeatManagementServiceImpl implements SeatManagementService {
     private final TrainServiceUtil trainServiceUtil;
     private final TrainService trainService;
     private final RestTemplate restTemplate;
+
     /**
      * Frees previously booked seats for a train on a specific travel date.
      *
      * @param bookedSeats List of seat positions to be freed.
-     * @param trainPrn       The train prn.
+     * @param trainPrn    The train PRN.
      * @param travelDate  The travel date for which seats are being freed.
      */
     @Override
     public void freeTheBookedSeats(List<List<Integer>> bookedSeats, String trainPrn, LocalDate travelDate) {
+        // Retrieve the current seat layout for the specified train and date
         ResponseDataDTO seatsLayout = this.getSeatsAtParticularDate(trainPrn, travelDate);
         Train train = trainService.findTrainByPrn(trainPrn).orElse(null);
+
         // Train not found
         if (train == null) {
             log.warn("Train not found: {}", trainPrn);
             throw new CustomException("Train does not exist with PRN: " + trainPrn, ResponseStatus.TRAIN_NOT_FOUND);
         }
+
         log.info("Seats layout before freeing {}", seatsLayout.getData());
         if (seatsLayout.isStatus()) {
             // Retrieve the current seat layout and mark the specified seats as free (0)
             List<List<Integer>> seatsList = (List<List<Integer>>) seatsLayout.getData();
             bookedSeats.forEach(seat -> seatsList.get(seat.get(0)).set(seat.get(1), 0));
             train.getSeats().put(travelDate.toString(), seatsList);
+
             log.info("Seats layout after freeing {}", train.getSeats().get(travelDate.toString()));
-            // update the train
+            // Update the train with the modified seat layout
             trainService.updateTrain(train);
         }
     }
 
-
-
-
+    /**
+     * Books seats on a train for a specific user and travel date.
+     *
+     * @param userId                  The ID of the user booking the seats.
+     * @param trainPrn                The PRN of the train.
+     * @param source                  The source station.
+     * @param destination             The destination station.
+     * @param dateOfTravel            The travel date.
+     * @param numberOfSeatsToBeBooked The number of seats to be booked.
+     * @return ResponseDataDTO containing the booking response.
+     */
     @Override
-    public ResponseDataDTO bookTrain(String userId,String trainPrn, String source, String destination, LocalDate dateOfTravel,int numberOfSeatsToBeBooked) {
-        // check if can be booked and get the train
-        Train train = trainService.canBeBooked(trainPrn,source,destination,dateOfTravel);
-        //Retrieve seat availability data
-        List<List<Integer>> availableSeatsList = this.areSeatsAvailable(train,numberOfSeatsToBeBooked,dateOfTravel);
-        // All seats
+    public ResponseDataDTO bookTrain(String userId, String trainPrn, String source, String destination, LocalDate dateOfTravel, int numberOfSeatsToBeBooked) {
+        // Check if the train can be booked and retrieve the train object
+        Train train = trainService.canBeBooked(trainPrn, source, destination, dateOfTravel);
+
+        // Retrieve seat availability data
+        List<List<Integer>> availableSeatsList = this.areSeatsAvailable(train, numberOfSeatsToBeBooked, dateOfTravel);
+
+        // All seats for the specified travel date
         List<List<Integer>> allSeats = train.getSeats().get(dateOfTravel.toString());
-        // book seats (0 -> 1)
+
         // Mark each specified seat as booked (1)
         availableSeatsList.forEach(seat -> allSeats.get(seat.get(0)).set(seat.get(1), 1));
-        // create ticket (call ticket microservice)
-        // Create the request DTO
+
+        // Create the ticket request DTO
         TicketRequestDTO ticketRequestDTO = TicketRequestDTO.builder()
                 .userId(userId)
                 .trainId(trainPrn)
@@ -87,7 +101,7 @@ public class SeatManagementServiceImpl implements SeatManagementService {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<TicketRequestDTO> requestEntity = new HttpEntity<>(ticketRequestDTO, headers);
 
-        // Send the request
+        // Send the ticket booking request to the external service
         ResponseEntity<ResponseDataDTO> ticketBookingResponse = restTemplate.exchange(
                 "http://localhost:8083/v1/tickets/createTicket",
                 HttpMethod.POST,
@@ -95,7 +109,7 @@ public class SeatManagementServiceImpl implements SeatManagementService {
                 ResponseDataDTO.class
         );
 
-        // update train
+        // Update the train with the modified seat layout
         trainService.updateTrain(train);
         log.info("Updating train in the DB");
 
@@ -105,20 +119,23 @@ public class SeatManagementServiceImpl implements SeatManagementService {
     /**
      * Retrieves the seat layout of a train for a specific travel date.
      *
-     * @param trainPrn    The PRN of the train.
-     * @param travelDate  The travel date.
+     * @param trainPrn   The PRN of the train.
+     * @param travelDate The travel date.
      * @return ResponseDataDTO containing the seat layout.
      */
     @Override
     public ResponseDataDTO getSeatsAtParticularDate(String trainPrn, LocalDate travelDate) {
+        // Retrieve the train by its PRN
         Train train = trainService.findTrainByPrn(trainPrn).orElse(null);
+
+        // Train not found
         if (train == null) {
             throw new CustomException("Train does not exist with PRN: " + trainPrn, ResponseStatus.TRAIN_NOT_FOUND);
-
         }
+
+        // Return the seat layout for the specified travel date
         return new ResponseDataDTO(true, String.format("Seats of train %s fetched successfully", trainPrn), train.getSeats().get(travelDate.toString()));
     }
-
 
     /**
      * Checks if the requested number of seats are available for a train on a specific travel date.
@@ -126,11 +143,13 @@ public class SeatManagementServiceImpl implements SeatManagementService {
      * @param train                  The train object.
      * @param numberOfSeatsToBeBooked The number of seats requested.
      * @param travelDate             The travel date.
-     * @return ResponseDataDTO containing the seat availability result.
+     * @return List of available seat positions.
      */
     @Override
     public List<List<Integer>> areSeatsAvailable(Train train, int numberOfSeatsToBeBooked, LocalDate travelDate) {
         log.info("Checking seat availability for train {}: {} seats requested", train.getPrn(), numberOfSeatsToBeBooked);
+
+        // Retrieve all seats for the specified travel date
         List<List<Integer>> allSeats = train.getSeats().get(travelDate.toString());
         List<List<Integer>> availableSeats = new ArrayList<>();
 
@@ -140,8 +159,7 @@ public class SeatManagementServiceImpl implements SeatManagementService {
         // If the requested number of seats exceeds the total number of seats
         if (numberOfSeatsToBeBooked > totalSeats) {
             log.warn("Not enough seats available in train {}: requested {} seats, total seats {}", train.getPrn(), numberOfSeatsToBeBooked, totalSeats);
-                    throw new CustomException("Not enough seats available", ResponseStatus.NOT_ENOUGH_SEATS);
-
+            throw new CustomException("Not enough seats available", ResponseStatus.NOT_ENOUGH_SEATS);
         }
 
         int foundContinuousSeats = 0;
@@ -167,7 +185,7 @@ public class SeatManagementServiceImpl implements SeatManagementService {
         }
 
         // Continuous seats not found; try to find separate seats
-        log.info("Continuous seats not found", numberOfSeatsToBeBooked, train.getPrn());
+        log.info("Continuous seats not found for train {}", train.getPrn());
         availableSeats = new ArrayList<>();
 
         for (int index = 0; index < totalSeats; index++) {
@@ -189,6 +207,5 @@ public class SeatManagementServiceImpl implements SeatManagementService {
         // Not enough seats found
         log.warn("Not enough seats available in train {}: requested {} seats, found {} seats", train.getPrn(), numberOfSeatsToBeBooked, foundSeats);
         throw new CustomException("Not enough seats available", ResponseStatus.NOT_ENOUGH_SEATS);
-
     }
 }

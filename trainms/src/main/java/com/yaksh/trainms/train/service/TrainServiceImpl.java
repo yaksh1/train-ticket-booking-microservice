@@ -1,6 +1,5 @@
 package com.yaksh.trainms.train.service;
 
-
 import com.yaksh.trainms.train.DTO.ResponseDataDTO;
 import com.yaksh.trainms.train.enums.ResponseStatus;
 import com.yaksh.trainms.train.exceptions.CustomException;
@@ -105,9 +104,6 @@ public class TrainServiceImpl implements TrainService {
         }
     }
 
-
-
-
     /**
      * Gets the arrival time of a train at the source station on a specific travel date.
      *
@@ -148,8 +144,6 @@ public class TrainServiceImpl implements TrainService {
         return new ResponseDataDTO(true, String.format("Schedule of train %s fetched successfully", trainPrn), train.getSchedules().get(travelDate.toString()));
     }
 
-
-
     /**
      * Searches for trains between a source and destination on a specific travel date.
      *
@@ -175,7 +169,6 @@ public class TrainServiceImpl implements TrainService {
         log.info("Found {} trains from {} to {}", trains.size(), source, destination);
         return new ResponseDataDTO(true, "Trains fetched", result);
     }
-
 
     /**
      * Finds a train by its PRN.

@@ -1,6 +1,5 @@
 package com.yaksh.userms.user.exceptions;
 
-
 import com.yaksh.userms.user.enums.ResponseStatus;
 
 /**

@@ -12,7 +12,6 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-
 import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
@@ -63,43 +62,57 @@ public class TicketServiceImpl implements TicketService {
      */
     @Override
     public ResponseDataDTO findTicketById(String idOfTicketToFind) {
-        // Directly delegates to the repository's findById method.
+        // Attempt to find the ticket by its ID.
         Ticket ticketFound= ticketRepositoryV2.findById(idOfTicketToFind).orElse(null);
         if (ticketFound == null) {
+            // Log a warning if the ticket is not found.
             log.warn("Ticket not found: {}", idOfTicketToFind);
             throw new CustomException(String.format("Ticket ID: %s not found", idOfTicketToFind),
                     ResponseStatus.TICKET_NOT_FOUND);
         }
 
+        // Return the found ticket.
         return new ResponseDataDTO(true, "Ticket found", ticketFound);
     }
 
-
+    /**
+     * Creates a new ticket by assigning a unique ID and saving it to the database.
+     * 
+     * @param ticket The ticket object to create.
+     * @return The response containing the saved ticket details.
+     */
     @Override
-    public ResponseDataDTO createNewTicket(
-            Ticket ticket
-    ) {
-        // Generate a new ticket id
+    public ResponseDataDTO createNewTicket(Ticket ticket) {
+        // Generate a new unique ticket ID.
         ticket.setTicketId(UUID.randomUUID().toString());
 
         // Save the newly created ticket to the database and return it.
         return saveTicket(ticket);
     }
 
+    /**
+     * Cancels a ticket by freeing up booked seats and deleting the ticket from the database.
+     * 
+     * @param ticketIdToCancel The unique ID of the ticket to cancel.
+     * @return The response indicating the ticket cancellation status.
+     */
     @Override
     public ResponseDataDTO cancelTicket(String ticketIdToCancel) {
+        // Attempt to find the ticket by its ID.
         Ticket ticketFound = ticketRepositoryV2.findById(ticketIdToCancel).orElse(null);
-        if(ticketFound==null){
+        if(ticketFound == null){
+            // Throw an exception if the ticket is not found.
             throw new CustomException(String.format("Ticket ID: %s not found", ticketIdToCancel),
                     ResponseStatus.TICKET_NOT_FOUND);
         }
 
-        // free up the seats in the train
+        // Free up the seats in the train by calling an external service.
         String url = "http://localhost:8082/v1/seats/freeBookedSeats";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
+        // Create a request body for freeing up seats.
         FreeBookedSeatsRequestDTO requestDTO = new FreeBookedSeatsRequestDTO(
                 ticketFound.getTrainId(),
                 ticketFound.getBookedSeatsIndex(),
@@ -110,33 +123,44 @@ public class TicketServiceImpl implements TicketService {
         ResponseEntity<ResponseDataDTO> freeUpSeatsResponse = restTemplate.exchange(
                 url, HttpMethod.PUT, requestEntity, ResponseDataDTO.class
         );
-        // delete ticket from database
+
+        // Delete the ticket from the database.
         ticketRepositoryV2.deleteById(ticketIdToCancel);
 
+        // Return a response indicating the ticket has been deleted.
         return new ResponseDataDTO(true, String.format("Ticket ID: %s has been deleted.", ticketIdToCancel));
     }
 
+    /**
+     * Reschedules a ticket to a new travel date by updating the database and external services.
+     * 
+     * @param ticketIdToReschedule The unique ID of the ticket to reschedule.
+     * @param updatedTravelDate The new travel date.
+     * @return The response indicating the rescheduling status.
+     */
     @Override
     public ResponseDataDTO rescheduleTicket(String ticketIdToReschedule, LocalDate updatedTravelDate) {
-        // Find the ticket by its ID
+        // Find the ticket by its ID.
         Ticket ticketFound = ticketRepositoryV2.findById(ticketIdToReschedule).orElse(null);
         if (ticketFound == null) {
+            // Throw an exception if the ticket is not found.
             throw new CustomException(String.format("Ticket ID: %s not found", ticketIdToReschedule),
                     ResponseStatus.TICKET_NOT_FOUND);
         }
 
-        // Check if the train can be booked for the new date
+        // Check if the train can be booked for the new date by calling an external service.
         restTemplate.exchange("http://localhost:8082/v1/train/canBeBooked?trainPrn="+ticketFound.getTrainId()
                 +"&source="+ticketFound.getSource()+"&destination="+ticketFound.getDestination()
                 +"&travelDate="+updatedTravelDate,HttpMethod.GET,null,ResponseDataDTO.class
         );
 
-        // free up the seats in the train
+        // Free up the seats in the train for the old date.
         String url = "http://localhost:8082/v1/seats/freeBookedSeats";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
 
+        // Create a request body for freeing up seats.
         FreeBookedSeatsRequestDTO requestDTO = new FreeBookedSeatsRequestDTO(
                 ticketFound.getTrainId(),
                 ticketFound.getBookedSeatsIndex(),
@@ -148,16 +172,15 @@ public class TicketServiceImpl implements TicketService {
                 url, HttpMethod.PUT, requestEntity, ResponseDataDTO.class
         );
 
-        // Update the ticket's travel date
+        // Update the ticket's travel date.
         log.info("Updating the travel date in the ticket: {}", updatedTravelDate);
         ticketFound.setDateOfTravel(updatedTravelDate);
 
-        // Save the updated ticket in the database
+        // Save the updated ticket in the database.
         log.info("Saving the ticket in the database");
         ticketRepositoryV2.save(ticketFound);
 
-        // book seats with new date
-        // Create a request body DTO
+        // Book seats for the new travel date by calling an external service.
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("userId", ticketFound.getUserId());
         requestBody.put("trainPrn", ticketFound.getTrainId());
@@ -166,10 +189,7 @@ public class TicketServiceImpl implements TicketService {
         requestBody.put("travelDate", updatedTravelDate);
         requestBody.put("numberOfSeatsToBeBooked", ticketFound.getBookedSeatsIndex().size());
 
-        // Create HttpEntity with body and headers
         HttpEntity<Map<String, Object>> bookingRequestEntity = new HttpEntity<>(requestBody, headers);
-
-        // Call the API
         ResponseEntity<ResponseDataDTO> bookingResponse = restTemplate.exchange(
                 "http://localhost:8082/v1/seats/book",
                 HttpMethod.POST,
@@ -177,15 +197,22 @@ public class TicketServiceImpl implements TicketService {
                 ResponseDataDTO.class
         );
 
+        // Return a response indicating the travel date has been updated successfully.
         return new ResponseDataDTO(true, "Travel date updated successfully");
     }
 
+    /**
+     * Fetches all tickets based on a list of ticket IDs.
+     * 
+     * @param ticketIds The list of ticket IDs to fetch.
+     * @return The response containing the list of fetched tickets.
+     */
     @Override
     public ResponseDataDTO fetchAllTickets(List<String> ticketIds) {
-        // Directly delegates to the repository's findById method.
+        // Retrieve all tickets matching the provided IDs from the database.
         List<Ticket> tickets= ticketRepositoryV2.findAllById(ticketIds);
+
+        // Return the found tickets.
         return new ResponseDataDTO(true, "Ticket found", tickets);
     }
-
-
 }

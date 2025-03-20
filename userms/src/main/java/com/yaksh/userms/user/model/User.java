@@ -32,5 +32,6 @@ public class User {
     private String userEmail; // Email address of the user.
 
     private String hashedPassword; // Hashed password for secure authentication.
+
     private List<String> ticketsBookedIds; // List of tickets booked by the user.
 }

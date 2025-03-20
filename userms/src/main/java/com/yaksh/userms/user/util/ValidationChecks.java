@@ -4,7 +4,6 @@ import com.yaksh.userms.user.model.User;
 import com.yaksh.userms.user.repository.UserRepositoryV2;
 import org.springframework.stereotype.Component;
 
-
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
