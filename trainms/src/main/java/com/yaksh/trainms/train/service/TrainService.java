@@ -30,7 +30,7 @@ public interface TrainService {
      * @param prn The PRN of the train to be searched.
      * @return An Optional containing the train if found, or empty if not found.
      */
-    Optional<Train> findTrainByPrn(String prn);
+    Train findTrainByPrn(String prn);
 
     /**
      * Adds a new train to the system.

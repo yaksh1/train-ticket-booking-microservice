@@ -172,30 +172,25 @@ public class TicketServiceImpl implements TicketService {
                 url, HttpMethod.PUT, requestEntity, ResponseDataDTO.class
         );
 
+        // book seats for new date
+        ResponseEntity<ResponseDataDTO> bookingResponse = restTemplate.exchange(
+                "http://localhost:8082/v1/seats/bookSeats?trainPrn="+ticketFound.getTrainId()+"&travelDate="+updatedTravelDate
+                        + "&numberOfSeatsToBeBooked="+ticketFound.getBookedSeatsIndex().size(),
+                HttpMethod.POST,
+                null,
+                ResponseDataDTO.class
+        );
+        List<List<Integer>> newBookedSeatsList = (List<List<Integer>>) bookingResponse.getBody().getData();
         // Update the ticket's travel date.
         log.info("Updating the travel date in the ticket: {}", updatedTravelDate);
         ticketFound.setDateOfTravel(updatedTravelDate);
+        // Update the ticket's booked seats
+        log.info("Updating the ticket's booked seats: {}", newBookedSeatsList);
+        ticketFound.setBookedSeatsIndex(newBookedSeatsList);
 
         // Save the updated ticket in the database.
         log.info("Saving the ticket in the database");
         ticketRepositoryV2.save(ticketFound);
-
-        // Book seats for the new travel date by calling an external service.
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("userId", ticketFound.getUserId());
-        requestBody.put("trainPrn", ticketFound.getTrainId());
-        requestBody.put("source", ticketFound.getSource());
-        requestBody.put("destination", ticketFound.getDestination());
-        requestBody.put("travelDate", updatedTravelDate);
-        requestBody.put("numberOfSeatsToBeBooked", ticketFound.getBookedSeatsIndex().size());
-
-        HttpEntity<Map<String, Object>> bookingRequestEntity = new HttpEntity<>(requestBody, headers);
-        ResponseEntity<ResponseDataDTO> bookingResponse = restTemplate.exchange(
-                "http://localhost:8082/v1/seats/book",
-                HttpMethod.POST,
-                bookingRequestEntity,
-                ResponseDataDTO.class
-        );
 
         // Return a response indicating the travel date has been updated successfully.
         return new ResponseDataDTO(true, "Travel date updated successfully");

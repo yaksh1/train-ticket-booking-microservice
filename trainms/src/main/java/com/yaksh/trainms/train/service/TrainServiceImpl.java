@@ -177,8 +177,14 @@ public class TrainServiceImpl implements TrainService {
      * @return An Optional containing the train if found.
      */
     @Override
-    public Optional<Train> findTrainByPrn(String prn) {
-        return trainRepositoryV2.findById(prn);
+    public Train findTrainByPrn(String prn) {
+        Train train =  trainRepositoryV2.findById(prn).orElse(null);
+        // Train not found
+        if (train == null) {
+            log.warn("Train not found: {}", prn);
+            throw new CustomException("Train does not exist with PRN: " + prn, ResponseStatus.TRAIN_NOT_FOUND);
+        }
+        return train;
     }
 
     /**
@@ -194,7 +200,7 @@ public class TrainServiceImpl implements TrainService {
     public Train canBeBooked(String trainPrn, String source, String destination, LocalDate travelDate) {
         log.info("Checking if train can be booked: {}", trainPrn);
         // Retrieve the train by PRN
-        Train train = this.findTrainByPrn(trainPrn).orElse(null);
+        Train train = this.findTrainByPrn(trainPrn);
 
         // Train not found
         if (train == null) {

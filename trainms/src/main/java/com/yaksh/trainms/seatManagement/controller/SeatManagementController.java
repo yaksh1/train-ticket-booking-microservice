@@ -61,4 +61,9 @@ public class SeatManagementController {
         // Returns a success response after freeing the seats.
         return ResponseEntity.ok(new ResponseDataDTO(true, "Seats freed successfully", null));
     }
+
+    @PostMapping("/bookSeats")
+    public ResponseEntity<ResponseDataDTO> bookSeats(@RequestParam String trainPrn,@RequestParam LocalDate travelDate,@RequestParam int numberOfSeatsToBeBooked){
+        return ResponseEntity.ok(seatManagementService.bookSeats(trainPrn,travelDate,numberOfSeatsToBeBooked));
+    }
 }

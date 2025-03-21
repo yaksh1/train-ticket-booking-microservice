@@ -55,4 +55,6 @@ public interface SeatManagementService {
      */
     ResponseDataDTO getSeatsAtParticularDate(String trainPrn, LocalDate travelDate);
 
+    ResponseDataDTO bookSeats(String trainId,LocalDate travelDate,int numberOfSeatsToBeBooked);
+
 }
