@@ -1,6 +1,7 @@
 package com.yaksh.ticketms.ticket.service;
 
 import com.yaksh.ticketms.ticket.DTO.ResponseDataDTO;
+import com.yaksh.ticketms.ticket.DTO.TicketRequestDTO;
 import com.yaksh.ticketms.ticket.enums.ResponseStatus;
 import com.yaksh.ticketms.ticket.exceptions.CustomException;
 import com.yaksh.ticketms.ticket.model.FreeBookedSeatsRequestDTO;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDate;
 import java.util.HashMap;
@@ -30,6 +32,8 @@ public class TicketServiceImpl implements TicketService {
     // Repository for accessing and manipulating ticket data in the database.
     private final TicketRepositoryV2 ticketRepositoryV2;
     private final RestTemplate restTemplate;
+    @Value("${trainms.service.url}")
+    private String trainServiceUrl;
 
     /**
      * Saves a ticket to the database.
@@ -82,10 +86,20 @@ public class TicketServiceImpl implements TicketService {
      * @return The response containing the saved ticket details.
      */
     @Override
-    public ResponseDataDTO createNewTicket(Ticket ticket) {
+    public ResponseDataDTO createNewTicket(TicketRequestDTO ticketRequest) {
+        Ticket ticket = Ticket.builder()
+                .trainId(ticketRequest.getTrainId())
+                .userId(ticketRequest.getUserId())
+                .source(ticketRequest.getSource())
+                .destination(ticketRequest.getDestination())
+                .dateOfTravel(ticketRequest.getDateOfTravel())
+                .bookedSeatsIndex(ticketRequest.getBookedSeatsIndex())
+                .arrivalTimeAtSource(ticketRequest.getArrivalTimeAtSource())
+                .reachingTimeAtDestination(ticketRequest.getReachingTimeAtDestination())
+                .build();
         // Generate a new unique ticket ID.
         ticket.setTicketId(UUID.randomUUID().toString());
-
+        log.info("Creating new ticket: {}", ticket);
         // Save the newly created ticket to the database and return it.
         return saveTicket(ticket);
     }
@@ -107,7 +121,7 @@ public class TicketServiceImpl implements TicketService {
         }
 
         // Free up the seats in the train by calling an external service.
-        String url = "http://localhost:8082/v1/seats/freeBookedSeats";
+        String url = trainServiceUrl + "/v1/seats/freeBookedSeats";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -149,13 +163,13 @@ public class TicketServiceImpl implements TicketService {
         }
 
         // Check if the train can be booked for the new date by calling an external service.
-        restTemplate.exchange("http://localhost:8082/v1/train/canBeBooked?trainPrn="+ticketFound.getTrainId()
+        restTemplate.exchange(trainServiceUrl + "/v1/train/canBeBooked?trainPrn="+ticketFound.getTrainId()
                 +"&source="+ticketFound.getSource()+"&destination="+ticketFound.getDestination()
                 +"&travelDate="+updatedTravelDate,HttpMethod.GET,null,ResponseDataDTO.class
         );
 
         // Free up the seats in the train for the old date.
-        String url = "http://localhost:8082/v1/seats/freeBookedSeats";
+        String url = trainServiceUrl + "/v1/seats/freeBookedSeats";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -174,7 +188,7 @@ public class TicketServiceImpl implements TicketService {
 
         // book seats for new date
         ResponseEntity<ResponseDataDTO> bookingResponse = restTemplate.exchange(
-                "http://localhost:8082/v1/seats/bookSeats?trainPrn="+ticketFound.getTrainId()+"&travelDate="+updatedTravelDate
+                trainServiceUrl + "/v1/seats/bookSeats?trainPrn="+ticketFound.getTrainId()+"&travelDate="+updatedTravelDate
                         + "&numberOfSeatsToBeBooked="+ticketFound.getBookedSeatsIndex().size(),
                 HttpMethod.POST,
                 null,

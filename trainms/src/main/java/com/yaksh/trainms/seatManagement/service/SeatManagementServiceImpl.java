@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -26,6 +27,8 @@ public class SeatManagementServiceImpl implements SeatManagementService {
     private final TrainServiceUtil trainServiceUtil;
     private final TrainService trainService;
     private final RestTemplate restTemplate;
+    @Value("${ticketms.service.url}")
+    private String ticketServiceUrl;
 
     /**
      * Frees previously booked seats for a train on a specific travel date.
@@ -76,9 +79,10 @@ public class SeatManagementServiceImpl implements SeatManagementService {
         Train train = trainService.canBeBooked(trainPrn, source, destination, dateOfTravel);
 
         // marks seats as 1
-        ResponseDataDTO responseDataDTO = this.bookSeats(trainPrn,dateOfTravel,numberOfSeatsToBeBooked);
+        ResponseDataDTO responseDataDTO = this.bookSeats(trainPrn, dateOfTravel, numberOfSeatsToBeBooked);
+        log.info("Booking seats for train {}", trainPrn);
         List<List<Integer>> availableSeatsList =(List<List<Integer>>) responseDataDTO.getData();
-
+        log.info("Available seats: {}", availableSeatsList);
         // Create the ticket request DTO
         TicketRequestDTO ticketRequestDTO = TicketRequestDTO.builder()
                 .userId(userId)
@@ -90,20 +94,21 @@ public class SeatManagementServiceImpl implements SeatManagementService {
                 .arrivalTimeAtSource(trainService.getArrivalAtSourceTime(train, source, dateOfTravel))
                 .reachingTimeAtDestination(trainService.getArrivalAtSourceTime(train, destination, dateOfTravel))
                 .build();
-
-        // Create the HTTP entity with the DTO as the body
+        log.info("Ticket request DTO: {}", ticketRequestDTO.getUserId());
+        
+        // Create headers and entity for the request
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<TicketRequestDTO> requestEntity = new HttpEntity<>(ticketRequestDTO, headers);
-
+        
         // Send the ticket booking request to the external service
         ResponseEntity<ResponseDataDTO> ticketBookingResponse = restTemplate.exchange(
-                "http://localhost:8083/v1/tickets/createTicket",
+                 "http://ticket-ms:8083/v1/tickets/createTicket",
                 HttpMethod.POST,
                 requestEntity,
                 ResponseDataDTO.class
         );
-
+        log.info("Ticket booking response: {}", ticketBookingResponse.getBody());
         return ticketBookingResponse.getBody();
     }
 

@@ -65,13 +65,19 @@ public class TrainServiceUtilImpl implements TrainServiceUtil {
      */
     @Override
     public boolean doesTrainExist(String prn, TrainRepositoryV2 trainRepositoryV2) {
-        // Attempt to find the train in the repository by its PRN.
-        Train trainFound = trainRepositoryV2.findById(prn).orElse(null);
+        return trainRepositoryV2.findById(prn).isPresent();
+    }
 
-        // Return true if the train is found, false otherwise.
-        if (trainFound != null) {
-            return true;
+    @Override
+    public String convertListToString(List<List<Integer>> list) {
+        StringBuilder result = new StringBuilder();
+        for (int i = 0; i < list.size(); i++) {
+            List<Integer> subList = list.get(i);
+            result.append(subList.get(0)).append(",").append(subList.get(1));
+            if (i < list.size() - 1) {
+                result.append(";");
+            }
         }
-        return false;
+        return result.toString();
     }
 }

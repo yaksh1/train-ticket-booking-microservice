@@ -31,4 +31,12 @@ public interface TrainServiceUtil {
      * @return true if the train exists, false otherwise.
      */
     boolean doesTrainExist(String prn, TrainRepositoryV2 trainRepositoryV2);
+
+    /**
+     * Converts a list of seat positions to a string representation for URL parameters.
+     *
+     * @param list The list of seat positions to convert
+     * @return String representation of the list
+     */
+    String convertListToString(List<List<Integer>> list);
 }

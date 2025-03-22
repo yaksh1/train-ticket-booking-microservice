@@ -1,17 +1,19 @@
 package com.yaksh.ticketms.ticket.controller;
 
 import com.yaksh.ticketms.ticket.DTO.ResponseDataDTO;
-import com.yaksh.ticketms.ticket.model.Ticket;
+import com.yaksh.ticketms.ticket.DTO.TicketRequestDTO;
 import com.yaksh.ticketms.ticket.service.TicketService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
+
 
 @RestController
+@Slf4j
 @RequiredArgsConstructor
 @RequestMapping("/v1/tickets")
 public class TicketController {
@@ -54,13 +56,13 @@ public class TicketController {
 
     /**
      * Creates a new ticket.
-     * @param ticket The ticket object containing the details of the new ticket.
+     * @param ticketRequest The ticket request object containing the details of the new ticket.
      * @return ResponseDataDTO containing the details of the newly created ticket.
      */
     @PostMapping("/createTicket")
-    public ResponseEntity<ResponseDataDTO> createNewTicket(@RequestBody Ticket ticket) {
-        // Create a new ticket using the provided ticket details and return the result
-        return ResponseEntity.ok(ticketService.createNewTicket(ticket));
+    public ResponseEntity<ResponseDataDTO> createNewTicket(@RequestBody TicketRequestDTO ticketRequest) {
+        log.info("Creating new ticket for user: {}", ticketRequest.getUserId());
+        return ResponseEntity.ok(ticketService.createNewTicket(ticketRequest));
     }
 
     /**

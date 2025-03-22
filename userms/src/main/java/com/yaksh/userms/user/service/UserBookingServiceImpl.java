@@ -13,6 +13,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -31,6 +32,11 @@ public class UserBookingServiceImpl implements UserBookingService {
     private final ValidationChecks validationChecks;
     private final UserRepositoryV2 userRepositoryV2;
     private final RestTemplate restTemplate;
+    @Value("${trainms.service.url}")
+    private String trainServiceUrl;
+    
+    @Value("${ticketms.service.url}")
+    private String ticketServiceUrl;
 
     /**
      * Sets the logged-in user.
@@ -172,7 +178,7 @@ public class UserBookingServiceImpl implements UserBookingService {
 
         // Call the API
         ResponseEntity<ResponseDataDTO> bookingResponse = restTemplate.exchange(
-                "http://localhost:8082/v1/seats/book",
+                trainServiceUrl + "/v1/seats/book",
                 HttpMethod.POST,
                 requestEntity,
                 ResponseDataDTO.class
@@ -213,7 +219,7 @@ public class UserBookingServiceImpl implements UserBookingService {
         }
 
         // Build the URL for the ticket-fetching API
-        String url = UriComponentsBuilder.fromUriString("http://localhost:8083/v1/tickets/fetchAllTickets")
+        String url = UriComponentsBuilder.fromUriString(ticketServiceUrl + "/v1/tickets/fetchAllTickets")
                 .queryParam("ticketIds", loggedInUser.getTicketsBookedIds())
                 .toUriString();
 
@@ -239,7 +245,7 @@ public class UserBookingServiceImpl implements UserBookingService {
 
         // Call the ticket cancellation API
         ResponseEntity<ResponseDataDTO> ticketCancelResponse = restTemplate.exchange(
-                "http://localhost:8083/v1/tickets/" + idOfTicketToCancel,
+                ticketServiceUrl + "/v1/tickets/" + idOfTicketToCancel,
                 HttpMethod.DELETE, null, ResponseDataDTO.class
         );
 
@@ -271,7 +277,7 @@ public class UserBookingServiceImpl implements UserBookingService {
         }
 
         // Call the API and return the response
-        return restTemplate.exchange("http://localhost:8083/v1/tickets/" + idOfTicketToFind,
+        return restTemplate.exchange(ticketServiceUrl + "/v1/tickets/" + idOfTicketToFind,
                 HttpMethod.GET, null, ResponseDataDTO.class).getBody();
     }
 
@@ -298,7 +304,7 @@ public class UserBookingServiceImpl implements UserBookingService {
         }
 
         // Call the ticket rescheduling API
-        restTemplate.exchange("http://localhost:8083/v1/tickets/rescheduleTicket/" + ticketId +
+        restTemplate.exchange(ticketServiceUrl + "/v1/tickets/rescheduleTicket/" + ticketId +
                         "?updatedTravelDate=" + updatedTravelDate, HttpMethod.PUT,
                 null, ResponseDataDTO.class);
 

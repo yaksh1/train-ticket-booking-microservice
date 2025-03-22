@@ -1,6 +1,7 @@
 package com.yaksh.ticketms.ticket.service;
 
 import com.yaksh.ticketms.ticket.DTO.ResponseDataDTO;
+import com.yaksh.ticketms.ticket.DTO.TicketRequestDTO;
 import com.yaksh.ticketms.ticket.model.Ticket;
 
 import java.time.LocalDate;
@@ -34,10 +35,10 @@ public interface TicketService {
     /**
      * Creates a new ticket.
      * 
-     * @param ticket the ticket object containing the details of the new ticket to create.
+     * @param ticketRequest the ticket request object containing the details of the new ticket to create.
      * @return a ResponseDataDTO containing the result of the ticket creation operation.
      */
-    ResponseDataDTO createNewTicket(Ticket ticket);
+    ResponseDataDTO createNewTicket(TicketRequestDTO ticketRequest);
 
     /**
      * Cancels a ticket by its unique ID.

@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  mongo_db:
+    image: mongo
+    container_name: mongo_container_two
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - backend
+
+  user-ms:
+    build:
+      context: ./userms
+    container_name: user_ms_container
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_APPLICATION_NAME=userms
+      - SERVER_PORT=8081
+      - SPRING_DATA_MONGODB_HOST=mongo_db
+      - SPRING_DATA_MONGODB_PORT=27017
+      - SPRING_DATA_MONGODB_DATABASE=userms_db
+    depends_on:
+      - mongo_db
+    networks:
+      - backend
+
+  train-ms:
+    build:
+      context: ./trainms
+    container_name: train_ms_container
+    restart: always
+    ports:
+      - "8082:8082"
+    environment:
+      - SPRING_APPLICATION_NAME=trainms
+      - SERVER_PORT=8082
+      - SPRING_DATA_MONGODB_HOST=mongo_db
+      - SPRING_DATA_MONGODB_PORT=27017
+      - SPRING_DATA_MONGODB_DATABASE=trainms_db
+    depends_on:
+      - mongo_db
+    networks:
+      - backend
+
+  ticket-ms:
+    build:
+      context: ./ticketms
+    container_name: ticket_ms_container
+    restart: always
+    ports:
+      - "8083:8083"
+    environment:
+      - SPRING_APPLICATION_NAME=ticketms
+      - SERVER_PORT=8083
+      - SPRING_DATA_MONGODB_HOST=mongo_db
+      - SPRING_DATA_MONGODB_PORT=27017
+      - SPRING_DATA_MONGODB_DATABASE=ticketms_db
+    depends_on:
+      - mongo_db
+    networks:
+      - backend
+
+volumes:
+  mongo_data:
+
+networks:
+  backend:
+    driver: bridge
