@@ -82,7 +82,7 @@ public class TicketServiceImpl implements TicketService {
     /**
      * Creates a new ticket by assigning a unique ID and saving it to the database.
      * 
-     * @param ticket The ticket object to create.
+     * @param ticketRequest The ticket request object containing ticket details.
      * @return The response containing the saved ticket details.
      */
     @Override
@@ -186,7 +186,7 @@ public class TicketServiceImpl implements TicketService {
                 url, HttpMethod.PUT, requestEntity, ResponseDataDTO.class
         );
 
-        // book seats for new date
+        // Book seats for the new date.
         ResponseEntity<ResponseDataDTO> bookingResponse = restTemplate.exchange(
                 trainServiceUrl + "/v1/seats/bookSeats?trainPrn="+ticketFound.getTrainId()+"&travelDate="+updatedTravelDate
                         + "&numberOfSeatsToBeBooked="+ticketFound.getBookedSeatsIndex().size(),
@@ -198,7 +198,7 @@ public class TicketServiceImpl implements TicketService {
         // Update the ticket's travel date.
         log.info("Updating the travel date in the ticket: {}", updatedTravelDate);
         ticketFound.setDateOfTravel(updatedTravelDate);
-        // Update the ticket's booked seats
+        // Update the ticket's booked seats.
         log.info("Updating the ticket's booked seats: {}", newBookedSeatsList);
         ticketFound.setBookedSeatsIndex(newBookedSeatsList);
 

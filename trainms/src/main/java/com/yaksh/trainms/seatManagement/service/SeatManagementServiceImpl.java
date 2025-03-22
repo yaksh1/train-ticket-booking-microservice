@@ -78,11 +78,12 @@ public class SeatManagementServiceImpl implements SeatManagementService {
         // Check if the train can be booked and retrieve the train object
         Train train = trainService.canBeBooked(trainPrn, source, destination, dateOfTravel);
 
-        // marks seats as 1
+        // Marks seats as booked (1)
         ResponseDataDTO responseDataDTO = this.bookSeats(trainPrn, dateOfTravel, numberOfSeatsToBeBooked);
         log.info("Booking seats for train {}", trainPrn);
-        List<List<Integer>> availableSeatsList =(List<List<Integer>>) responseDataDTO.getData();
+        List<List<Integer>> availableSeatsList = (List<List<Integer>>) responseDataDTO.getData();
         log.info("Available seats: {}", availableSeatsList);
+
         // Create the ticket request DTO
         TicketRequestDTO ticketRequestDTO = TicketRequestDTO.builder()
                 .userId(userId)
@@ -133,9 +134,19 @@ public class SeatManagementServiceImpl implements SeatManagementService {
         return new ResponseDataDTO(true, String.format("Seats of train %s fetched successfully", trainPrn), train.getSeats().get(travelDate.toString()));
     }
 
+    /**
+     * Books seats on a train for a specific travel date.
+     *
+     * @param trainId                The PRN of the train.
+     * @param travelDate             The travel date.
+     * @param numberOfSeatsToBeBooked The number of seats to be booked.
+     * @return ResponseDataDTO containing the booking response.
+     */
     @Override
-    public ResponseDataDTO bookSeats(String trainId, LocalDate travelDate,int numberOfSeatsToBeBooked) {
+    public ResponseDataDTO bookSeats(String trainId, LocalDate travelDate, int numberOfSeatsToBeBooked) {
+        // Retrieve the train by its PRN
         Train train = trainService.findTrainByPrn(trainId);
+
         // Retrieve seat availability data
         List<List<Integer>> availableSeatsList = this.areSeatsAvailable(train, numberOfSeatsToBeBooked, travelDate);
 
@@ -148,7 +159,7 @@ public class SeatManagementServiceImpl implements SeatManagementService {
         // Update the train with the modified seat layout
         trainService.updateTrain(train);
         log.info("Updating train in the DB");
-        return new ResponseDataDTO(true,"seats booked",availableSeatsList);
+        return new ResponseDataDTO(true, "seats booked", availableSeatsList);
     }
 
     /**
