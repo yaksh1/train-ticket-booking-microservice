@@ -12,6 +12,18 @@ services:
     networks:
       - backend
 
+  service-reg:
+    build:
+      context: ./service-reg
+    container_name: service_registry
+    restart: always
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - backend
+
   user-ms:
     build:
       context: ./userms
@@ -20,13 +32,10 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - SPRING_APPLICATION_NAME=userms
-      - SERVER_PORT=8081
-      - SPRING_DATA_MONGODB_HOST=mongo_db
-      - SPRING_DATA_MONGODB_PORT=27017
-      - SPRING_DATA_MONGODB_DATABASE=userms_db
+      - SPRING_PROFILES_ACTIVE=docker
     depends_on:
       - mongo_db
+      - service-reg
     networks:
       - backend
 
@@ -38,13 +47,10 @@ services:
     ports:
       - "8082:8082"
     environment:
-      - SPRING_APPLICATION_NAME=trainms
-      - SERVER_PORT=8082
-      - SPRING_DATA_MONGODB_HOST=mongo_db
-      - SPRING_DATA_MONGODB_PORT=27017
-      - SPRING_DATA_MONGODB_DATABASE=trainms_db
+      - SPRING_PROFILES_ACTIVE=docker
     depends_on:
       - mongo_db
+      - service-reg
     networks:
       - backend
 
@@ -56,13 +62,10 @@ services:
     ports:
       - "8083:8083"
     environment:
-      - SPRING_APPLICATION_NAME=ticketms
-      - SERVER_PORT=8083
-      - SPRING_DATA_MONGODB_HOST=mongo_db
-      - SPRING_DATA_MONGODB_PORT=27017
-      - SPRING_DATA_MONGODB_DATABASE=ticketms_db
+      - SPRING_PROFILES_ACTIVE=docker
     depends_on:
       - mongo_db
+      - service-reg
     networks:
       - backend
 
