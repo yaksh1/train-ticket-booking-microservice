@@ -83,33 +83,45 @@ public class SeatManagementServiceImpl implements SeatManagementService {
         log.info("Booking seats for train {}", trainPrn);
         List<List<Integer>> availableSeatsList =(List<List<Integer>>) responseDataDTO.getData();
         log.info("Available seats: {}", availableSeatsList);
-        // Create the ticket request DTO
-        TicketRequestDTO ticketRequestDTO = TicketRequestDTO.builder()
-                .userId(userId)
-                .trainId(trainPrn)
-                .dateOfTravel(dateOfTravel)
-                .source(source)
-                .destination(destination)
-                .bookedSeatsIndex(availableSeatsList)
-                .arrivalTimeAtSource(trainService.getArrivalAtSourceTime(train, source, dateOfTravel))
-                .reachingTimeAtDestination(trainService.getArrivalAtSourceTime(train, destination, dateOfTravel))
-                .build();
-        log.info("Ticket request DTO: {}", ticketRequestDTO.getUserId());
-        
-        // Create headers and entity for the request
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        HttpEntity<TicketRequestDTO> requestEntity = new HttpEntity<>(ticketRequestDTO, headers);
-        
-        // Send the ticket booking request to the external service
-        ResponseEntity<ResponseDataDTO> ticketBookingResponse = restTemplate.exchange(
-                 "http://ticket-ms:8083/v1/tickets/createTicket",
-                HttpMethod.POST,
-                requestEntity,
-                ResponseDataDTO.class
-        );
-        log.info("Ticket booking response: {}", ticketBookingResponse.getBody());
-        return ticketBookingResponse.getBody();
+        try {
+            // Create the ticket request DTO
+            TicketRequestDTO ticketRequestDTO = TicketRequestDTO.builder()
+                    .userId(userId)
+                    .trainId(trainPrn)
+                    .dateOfTravel(dateOfTravel)
+                    .source(source)
+                    .destination(destination)
+                    .bookedSeatsIndex(availableSeatsList)
+                    .arrivalTimeAtSource(trainService.getArrivalAtSourceTime(train, source, dateOfTravel))
+                    .reachingTimeAtDestination(trainService.getArrivalAtSourceTime(train, destination, dateOfTravel))
+                    .build();
+            log.info("Ticket request DTO: {}", ticketRequestDTO.getUserId());
+
+            // Create headers and entity for the request
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<TicketRequestDTO> requestEntity = new HttpEntity<>(ticketRequestDTO, headers);
+
+            // Send the ticket booking request to the external service
+            ResponseEntity<ResponseDataDTO> ticketBookingResponse = restTemplate.exchange(
+                    ticketServiceUrl+ " /v1 /tickets/createTicket",
+                    HttpMethod.POST,
+                    requestEntity,
+                    ResponseDataDTO.class);
+            log.info("Ticket booking response: {}", ticketBookingResponse.getBody());
+            return ticketBookingResponse.getBody();
+        } catch (Exception e) {
+            // Ticket creation failed, so roll back the seat booking
+            log.error("Ticket creation failed, rolling back seat bookings: {}", e.getMessage());
+
+            // Free the seats that were just booked
+            freeTheBookedSeats(availableSeatsList, trainPrn, dateOfTravel);
+
+            // Propagate the exception with appropriate status
+            throw new CustomException("Failed to create ticket. Seat booking has been rolled back: " + e.getMessage(),
+                    ResponseStatus.TICKET_NOT_CREATED);
+        }
+       
     }
 
     /**
