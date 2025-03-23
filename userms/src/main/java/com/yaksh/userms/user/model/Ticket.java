@@ -1,6 +1,5 @@
 package com.yaksh.userms.user.model;
 
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -88,6 +87,4 @@ public class Ticket {
      * This field is optional.
      */
     private List<List<Integer>> bookedSeatsIndex;
-
-
 }

@@ -15,6 +15,8 @@ public class AppConfig {
 
     /**
      * Creates and configures a {@link RestTemplate} bean.
+     * The {@link LoadBalanced} annotation ensures that this RestTemplate instance
+     * is load-balanced and can interact with services registered in a service registry (e.g., Eureka).
      * 
      * @param builder a {@link RestTemplateBuilder} used to build the RestTemplate
      * @return a fully configured {@link RestTemplate} instance

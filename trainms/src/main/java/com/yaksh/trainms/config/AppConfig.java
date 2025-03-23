@@ -17,6 +17,8 @@ public class AppConfig {
     /**
      * Creates and configures a {@link RestTemplate} bean.
      * The {@link RestTemplate} is a synchronous client to perform HTTP requests.
+     * This bean is annotated with {@link LoadBalanced}, enabling client-side load balancing
+     * for service-to-service communication in a microservices architecture.
      *
      * @param builder a {@link RestTemplateBuilder} used to build the RestTemplate instance.
      * @return a configured {@link RestTemplate} instance.

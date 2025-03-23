@@ -33,6 +33,7 @@ public class UserController {
      */
     @PostMapping("/loginUser")
     public ResponseEntity<ResponseDataDTO> loginUser(@RequestParam String userEmail, @RequestParam String password) {
+        // Call the service layer to handle user login and return the response.
         ResponseDataDTO responseDataDTO = service.loginUser(userEmail, password);
         return ResponseEntity.ok(responseDataDTO);
     }
@@ -46,6 +47,7 @@ public class UserController {
      */
     @PostMapping("/signupUser")
     public ResponseEntity<ResponseDataDTO> signupUser(@RequestParam String userEmail, @RequestParam String password) {
+        // Call the service layer to handle user signup and return the response.
         return ResponseEntity.ok(service.signupUser(userEmail, password));
     }
 
@@ -66,6 +68,7 @@ public class UserController {
             @RequestParam String destination,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateOfTravel,
             @RequestParam int numberOfSeatsToBeBooked) {
+        // Call the service layer to handle ticket booking and return the response.
         return ResponseEntity.ok(
                 service.bookTicket(trainPrn, source, destination, dateOfTravel, numberOfSeatsToBeBooked));
     }
@@ -77,6 +80,7 @@ public class UserController {
      */
     @GetMapping("/fetchTickets")
     public ResponseEntity<ResponseDataDTO> fetchAllTickets() {
+        // Call the service layer to fetch all tickets for the logged-in user and return the response.
         return ResponseEntity.ok(service.fetchAllTickets());
     }
 
@@ -88,6 +92,7 @@ public class UserController {
      */
     @PostMapping("/cancelTicket")
     public ResponseEntity<ResponseDataDTO> cancelTicket(@RequestParam String ticketId) {
+        // Call the service layer to handle ticket cancellation and return the response.
         return ResponseEntity.ok(service.cancelTicket(ticketId));
     }
 
@@ -99,6 +104,7 @@ public class UserController {
      */
     @GetMapping("/fetchTicketById")
     public ResponseEntity<ResponseDataDTO> fetchTicketById(@RequestParam String ticketId) {
+        // Call the service layer to fetch ticket details by ID and return the response.
         return ResponseEntity.ok(service.fetchTicketById(ticketId));
     }
 
@@ -113,6 +119,7 @@ public class UserController {
     public ResponseEntity<ResponseDataDTO> rescheduleTicket(
             @RequestParam String ticketId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate updatedDateOfTravel) {
+        // Call the service layer to handle ticket rescheduling and return the response.
         return ResponseEntity.ok(service.rescheduleTicket(ticketId, updatedDateOfTravel));
     }
 }

@@ -46,7 +46,6 @@ public class UserBookingServiceImpl implements UserBookingService {
      *
      * @param user The user object to set as logged-in.
      */
-
     private void setLoggedInUser(User user) {
         this.loggedInUser = user;
         log.info("User logged in as: {}", user.getUserEmail());
@@ -94,7 +93,9 @@ public class UserBookingServiceImpl implements UserBookingService {
                         throw new CustomException(ResponseStatus.PASSWORD_INCORRECT);
                     }
                     this.loggedInUser = user;
+                    // Fetch all tickets associated with the user
                     List<Ticket> allTickets =(List<Ticket>) fetchAllTickets().getData();
+                    // Convert user and tickets to DTO
                     UserWithTicketDTO userWithTicketDTO = UserWithTicketDTOMapper.convertToUserWithTicketDTO(user,allTickets);
                     return new ResponseDataDTO(true, "User Found", userWithTicketDTO);
                 })
