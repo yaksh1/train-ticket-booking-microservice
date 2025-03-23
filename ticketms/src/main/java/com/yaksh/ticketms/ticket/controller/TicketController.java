@@ -11,7 +11,10 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 
-
+/**
+ * Controller class for handling ticket-related API endpoints.
+ * Provides functionality for creating, retrieving, updating, and deleting tickets.
+ */
 @RestController
 @Slf4j
 @RequiredArgsConstructor
@@ -61,7 +64,9 @@ public class TicketController {
      */
     @PostMapping("/createTicket")
     public ResponseEntity<ResponseDataDTO> createNewTicket(@RequestBody TicketRequestDTO ticketRequest) {
+        // Log the creation of a new ticket for the specified user
         log.info("Creating new ticket for user: {}", ticketRequest.getUserId());
+        // Create and return the details of the new ticket
         return ResponseEntity.ok(ticketService.createNewTicket(ticketRequest));
     }
 

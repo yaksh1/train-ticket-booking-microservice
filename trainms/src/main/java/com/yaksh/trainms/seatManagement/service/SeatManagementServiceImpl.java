@@ -104,7 +104,7 @@ public class SeatManagementServiceImpl implements SeatManagementService {
 
             // Send the ticket booking request to the external service
             ResponseEntity<ResponseDataDTO> ticketBookingResponse = restTemplate.exchange(
-                    ticketServiceUrl+ " /v1 /tickets/createTicket",
+                    ticketServiceUrl+ "/v1/tickets/createTicket",
                     HttpMethod.POST,
                     requestEntity,
                     ResponseDataDTO.class);
@@ -145,9 +145,19 @@ public class SeatManagementServiceImpl implements SeatManagementService {
         return new ResponseDataDTO(true, String.format("Seats of train %s fetched successfully", trainPrn), train.getSeats().get(travelDate.toString()));
     }
 
+    /**
+     * Books seats on a train for a specific travel date.
+     *
+     * @param trainId                The PRN of the train.
+     * @param travelDate             The travel date.
+     * @param numberOfSeatsToBeBooked The number of seats to be booked.
+     * @return ResponseDataDTO containing the booking response.
+     */
     @Override
-    public ResponseDataDTO bookSeats(String trainId, LocalDate travelDate,int numberOfSeatsToBeBooked) {
+    public ResponseDataDTO bookSeats(String trainId, LocalDate travelDate, int numberOfSeatsToBeBooked) {
+        // Retrieve the train by its PRN
         Train train = trainService.findTrainByPrn(trainId);
+
         // Retrieve seat availability data
         List<List<Integer>> availableSeatsList = this.areSeatsAvailable(train, numberOfSeatsToBeBooked, travelDate);
 
@@ -160,7 +170,7 @@ public class SeatManagementServiceImpl implements SeatManagementService {
         // Update the train with the modified seat layout
         trainService.updateTrain(train);
         log.info("Updating train in the DB");
-        return new ResponseDataDTO(true,"seats booked",availableSeatsList);
+        return new ResponseDataDTO(true, "seats booked", availableSeatsList);
     }
 
     /**
