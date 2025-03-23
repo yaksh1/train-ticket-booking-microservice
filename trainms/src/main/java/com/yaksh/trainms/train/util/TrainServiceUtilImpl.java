@@ -65,33 +65,6 @@ public class TrainServiceUtilImpl implements TrainServiceUtil {
      */
     @Override
     public boolean doesTrainExist(String prn, TrainRepositoryV2 trainRepositoryV2) {
-        // Check if a train with the given PRN exists in the repository.
         return trainRepositoryV2.findById(prn).isPresent();
-    }
-
-    /**
-     * Converts a nested list of integers into a formatted string.
-     *
-     * @param list A list of lists where each sublist contains two integers.
-     * @return A string representation of the list in the format "x1,y1;x2,y2;...".
-     */
-    @Override
-    public String convertListToString(List<List<Integer>> list) {
-        // StringBuilder to build the resulting string.
-        StringBuilder result = new StringBuilder();
-
-        // Iterate over each sublist in the list.
-        for (int i = 0; i < list.size(); i++) {
-            List<Integer> subList = list.get(i);
-            // Append the first and second elements of the sublist, separated by a comma.
-            result.append(subList.get(0)).append(",").append(subList.get(1));
-            // Add a semicolon between sublists, except for the last one.
-            if (i < list.size() - 1) {
-                result.append(";");
-            }
-        }
-
-        // Return the final formatted string.
-        return result.toString();
     }
 }
