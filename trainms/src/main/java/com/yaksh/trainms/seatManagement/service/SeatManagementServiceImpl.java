@@ -18,7 +18,7 @@ import java.time.LocalDate;
 import java.util.*;
 
 /**
- * Service implementation for managing train-related operations.
+ * Service implementation for managing train-related seat operations.
  */
 @Service
 @Slf4j
@@ -78,10 +78,10 @@ public class SeatManagementServiceImpl implements SeatManagementService {
         // Check if the train can be booked and retrieve the train object
         Train train = trainService.canBeBooked(trainPrn, source, destination, dateOfTravel);
 
-        // marks seats as 1
+        // Marks seats as booked (1)
         ResponseDataDTO responseDataDTO = this.bookSeats(trainPrn, dateOfTravel, numberOfSeatsToBeBooked);
         log.info("Booking seats for train {}", trainPrn);
-        List<List<Integer>> availableSeatsList =(List<List<Integer>>) responseDataDTO.getData();
+        List<List<Integer>> availableSeatsList = (List<List<Integer>>) responseDataDTO.getData();
         log.info("Available seats: {}", availableSeatsList);
         try {
             // Create the ticket request DTO
@@ -104,7 +104,7 @@ public class SeatManagementServiceImpl implements SeatManagementService {
 
             // Send the ticket booking request to the external service
             ResponseEntity<ResponseDataDTO> ticketBookingResponse = restTemplate.exchange(
-                    ticketServiceUrl+ "/v1/tickets/createTicket",
+                    ticketServiceUrl + "/v1/tickets/createTicket",
                     HttpMethod.POST,
                     requestEntity,
                     ResponseDataDTO.class);
@@ -121,7 +121,6 @@ public class SeatManagementServiceImpl implements SeatManagementService {
             throw new CustomException("Failed to create ticket. Seat booking has been rolled back: " + e.getMessage(),
                     ResponseStatus.TICKET_NOT_CREATED);
         }
-       
     }
 
     /**
@@ -146,12 +145,12 @@ public class SeatManagementServiceImpl implements SeatManagementService {
     }
 
     /**
-     * Books seats on a train for a specific travel date.
+     * Books the specified number of seats for a train on a given travel date.
      *
      * @param trainId                The PRN of the train.
      * @param travelDate             The travel date.
      * @param numberOfSeatsToBeBooked The number of seats to be booked.
-     * @return ResponseDataDTO containing the booking response.
+     * @return ResponseDataDTO containing the list of booked seat positions.
      */
     @Override
     public ResponseDataDTO bookSeats(String trainId, LocalDate travelDate, int numberOfSeatsToBeBooked) {
