@@ -1,6 +1,7 @@
 package com.yaksh.ticketms.ticket.config;
 
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
@@ -19,6 +20,7 @@ public class AppConfig {
      * @return a fully configured {@link RestTemplate} instance
      */
     @Bean
+    @LoadBalanced
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
         // Builds and returns a RestTemplate instance using the provided builder.
         return builder.build();

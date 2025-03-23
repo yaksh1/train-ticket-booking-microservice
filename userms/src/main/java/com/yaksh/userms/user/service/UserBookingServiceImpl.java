@@ -1,8 +1,11 @@
 package com.yaksh.userms.user.service;
 
 import com.yaksh.userms.user.DTO.ResponseDataDTO;
+import com.yaksh.userms.user.DTO.UserWithTicketDTO;
 import com.yaksh.userms.user.enums.ResponseStatus;
 import com.yaksh.userms.user.exceptions.CustomException;
+import com.yaksh.userms.user.mapper.UserWithTicketDTOMapper;
+import com.yaksh.userms.user.model.Ticket;
 import com.yaksh.userms.user.model.User;
 import com.yaksh.userms.user.repository.UserRepositoryV2;
 import com.yaksh.userms.user.util.UserServiceUtil;
@@ -43,8 +46,8 @@ public class UserBookingServiceImpl implements UserBookingService {
      *
      * @param user The user object to set as logged-in.
      */
-    @Override
-    public void setLoggedInUser(User user) {
+
+    private void setLoggedInUser(User user) {
         this.loggedInUser = user;
         log.info("User logged in as: {}", user.getUserEmail());
     }
@@ -54,8 +57,7 @@ public class UserBookingServiceImpl implements UserBookingService {
      *
      * @return The logged-in user object.
      */
-    @Override
-    public User getLoggedInUser() {
+    private User getLoggedInUser() {
         log.debug("Retrieving logged in user");
         return this.loggedInUser;
     }
@@ -65,8 +67,7 @@ public class UserBookingServiceImpl implements UserBookingService {
      *
      * @return List of all users.
      */
-    @Override
-    public List<User> getUserList() {
+    private List<User> getUserList() {
         log.info("Retrieving all users from repository");
         return userRepositoryV2.findAll();
     }
@@ -92,7 +93,10 @@ public class UserBookingServiceImpl implements UserBookingService {
                     if (!userServiceUtil.checkPassword(password, user.getHashedPassword())) {
                         throw new CustomException(ResponseStatus.PASSWORD_INCORRECT);
                     }
-                    return new ResponseDataDTO(true, "User Found", user);
+                    this.loggedInUser = user;
+                    List<Ticket> allTickets =(List<Ticket>) fetchAllTickets().getData();
+                    UserWithTicketDTO userWithTicketDTO = UserWithTicketDTOMapper.convertToUserWithTicketDTO(user,allTickets);
+                    return new ResponseDataDTO(true, "User Found", userWithTicketDTO);
                 })
                 .orElseThrow(() -> new CustomException(ResponseStatus.USER_NOT_FOUND));
     }

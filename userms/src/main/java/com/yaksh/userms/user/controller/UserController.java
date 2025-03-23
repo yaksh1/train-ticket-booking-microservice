@@ -34,11 +34,6 @@ public class UserController {
     @PostMapping("/loginUser")
     public ResponseEntity<ResponseDataDTO> loginUser(@RequestParam String userEmail, @RequestParam String password) {
         ResponseDataDTO responseDataDTO = service.loginUser(userEmail, password);
-
-        // If login is successful, set the logged-in user in the service layer
-        if (responseDataDTO.isStatus()) {
-            service.setLoggedInUser((User) responseDataDTO.getData());
-        }
         return ResponseEntity.ok(responseDataDTO);
     }
 

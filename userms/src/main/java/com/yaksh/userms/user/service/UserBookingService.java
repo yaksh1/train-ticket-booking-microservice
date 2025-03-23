@@ -12,27 +12,6 @@ import java.util.List;
 public interface UserBookingService {
 
     /**
-     * Sets the currently logged-in user.
-     * This is used to maintain the session state of the user interacting with the system.
-     * @param user The user to set as the logged-in user.
-     */
-    void setLoggedInUser(User user);
-
-    /**
-     * Retrieves the currently logged-in user.
-     * Useful for accessing user-specific information during the session.
-     * @return The logged-in user.
-     */
-    User getLoggedInUser();
-
-    /**
-     * Retrieves the list of all users.
-     * This can be used for administrative purposes or to display user information.
-     * @return A list of users.
-     */
-    List<User> getUserList();
-
-    /**
      * Authenticates a user using their email and password.
      * Validates the credentials and returns a response indicating success or failure.
      * @param userEmail The email of the user.

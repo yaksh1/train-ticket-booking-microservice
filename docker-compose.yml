@@ -24,10 +24,10 @@ services:
     networks:
       - backend
 
-  user-ms:
+  userms:
     build:
       context: ./userms
-    container_name: user_ms_container
+    container_name: userms_container
     restart: always
     ports:
       - "8081:8081"
@@ -39,10 +39,10 @@ services:
     networks:
       - backend
 
-  train-ms:
+  trainms:
     build:
       context: ./trainms
-    container_name: train_ms_container
+    container_name: trainms_container
     restart: always
     ports:
       - "8082:8082"
@@ -54,10 +54,10 @@ services:
     networks:
       - backend
 
-  ticket-ms:
+  ticketms:
     build:
       context: ./ticketms
-    container_name: ticket_ms_container
+    container_name: ticketms_container
     restart: always
     ports:
       - "8083:8083"
