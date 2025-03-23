@@ -65,6 +65,7 @@ public class TrainServiceUtilImpl implements TrainServiceUtil {
      */
     @Override
     public boolean doesTrainExist(String prn, TrainRepositoryV2 trainRepositoryV2) {
+        // Use the repository to check if a train with the given PRN exists.
         return trainRepositoryV2.findById(prn).isPresent();
     }
 }
