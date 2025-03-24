@@ -1,7 +1,10 @@
 package com.yaksh.userms.user.service;
 
+import com.yaksh.userms.user.DTO.BookTrainRequestDTO;
 import com.yaksh.userms.user.DTO.ResponseDataDTO;
 import com.yaksh.userms.user.DTO.UserWithTicketDTO;
+import com.yaksh.userms.user.clients.TicketClient;
+import com.yaksh.userms.user.clients.TrainClient;
 import com.yaksh.userms.user.enums.ResponseStatus;
 import com.yaksh.userms.user.exceptions.CustomException;
 import com.yaksh.userms.user.mapper.UserWithTicketDTOMapper;
@@ -14,8 +17,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDate;
@@ -34,7 +35,8 @@ public class UserBookingServiceImpl implements UserBookingService {
     private final UserServiceUtil userServiceUtil;
     private final ValidationChecks validationChecks;
     private final UserRepositoryV2 userRepositoryV2;
-    private final RestTemplate restTemplate;
+    private final TicketClient ticketClient;
+    private final TrainClient trainClient;
     @Value("${trainms.service.url}")
     private String trainServiceUrl;
     
@@ -164,34 +166,22 @@ public class UserBookingServiceImpl implements UserBookingService {
             throw new CustomException("Date of travel cannot be in the past", ResponseStatus.INVALID_DATA);
         }
 
-        // Step 1: Check train availability (Call Train Microservice API)
+        //Book Train (Call Train Microservice API)
         // Create a request body DTO
-        Map<String, Object> requestBody = new HashMap<>();
-        requestBody.put("userId", loggedInUser.getUserId());
-        requestBody.put("trainPrn", trainPrn);
-        requestBody.put("source", source);
-        requestBody.put("destination", destination);
-        requestBody.put("travelDate", dateOfTravel);
-        requestBody.put("numberOfSeatsToBeBooked", numberOfSeatsToBeBooked);
+        BookTrainRequestDTO bookTrainRequestDTO = BookTrainRequestDTO.builder()
+                .userId(loggedInUser.getUserId())
+                .trainPrn(trainPrn)
+                .source(source)
+                .destination(destination)
+                .travelDate(dateOfTravel)
+                .numberOfSeatsToBeBooked(numberOfSeatsToBeBooked)
+                .build();
 
-        // Create HttpHeaders
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        // Create HttpEntity with body and headers
-        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(requestBody, headers);
-
-        // Call the API
-        ResponseEntity<ResponseDataDTO> bookingResponse = restTemplate.exchange(
-                trainServiceUrl + "/v1/seats/book",
-                HttpMethod.POST,
-                requestEntity,
-                ResponseDataDTO.class
-        );
+        ResponseDataDTO bookingResponse = trainClient.bookSeats(bookTrainRequestDTO);
 
         try {
             // Get the booked ticket ID from the response
-            String ticketBookedId = (String) bookingResponse.getBody().getData();
+            String ticketBookedId = (String) bookingResponse.getData();
 
             // Update the user's booked ticket list
             loggedInUser.getTicketsBookedIds().add(ticketBookedId);
@@ -223,13 +213,8 @@ public class UserBookingServiceImpl implements UserBookingService {
             throw new CustomException("Please log in to book the ticket", ResponseStatus.USER_NOT_FOUND);
         }
 
-        // Build the URL for the ticket-fetching API
-        String url = UriComponentsBuilder.fromUriString(ticketServiceUrl + "/v1/tickets/fetchAllTickets")
-                .queryParam("ticketIds", loggedInUser.getTicketsBookedIds())
-                .toUriString();
-
         // Call the API and return the response
-        return restTemplate.exchange(url, HttpMethod.GET, null, ResponseDataDTO.class).getBody();
+        return ticketClient.fetchAllTickets(loggedInUser.getTicketsBookedIds());
     }
 
     /**
@@ -248,11 +233,8 @@ public class UserBookingServiceImpl implements UserBookingService {
             throw new CustomException("Please log in to book the ticket", ResponseStatus.USER_NOT_FOUND);
         }
 
-        // Call the ticket cancellation API
-        ResponseEntity<ResponseDataDTO> ticketCancelResponse = restTemplate.exchange(
-                ticketServiceUrl + "/v1/tickets/" + idOfTicketToCancel,
-                HttpMethod.DELETE, null, ResponseDataDTO.class
-        );
+        // Call the ticket cancellation API using Feign client
+        ResponseDataDTO cancelResponse = ticketClient.cancelTicket(idOfTicketToCancel);
 
         // Remove the ticket from the user's booked list
         loggedInUser.getTicketsBookedIds().removeIf(ticketId -> ticketId.equalsIgnoreCase(idOfTicketToCancel));
@@ -281,9 +263,8 @@ public class UserBookingServiceImpl implements UserBookingService {
             throw new CustomException("Please log in to book the ticket", ResponseStatus.USER_NOT_FOUND);
         }
 
-        // Call the API and return the response
-        return restTemplate.exchange(ticketServiceUrl + "/v1/tickets/" + idOfTicketToFind,
-                HttpMethod.GET, null, ResponseDataDTO.class).getBody();
+        // Call the API using Feign client and return the response
+        return ticketClient.fetchTicketById(idOfTicketToFind);
     }
 
     /**
@@ -308,10 +289,8 @@ public class UserBookingServiceImpl implements UserBookingService {
             throw new CustomException("Date of travel cannot be in the past", ResponseStatus.INVALID_DATA);
         }
 
-        // Call the ticket rescheduling API
-        restTemplate.exchange(ticketServiceUrl + "/v1/tickets/rescheduleTicket/" + ticketId +
-                        "?updatedTravelDate=" + updatedTravelDate, HttpMethod.PUT,
-                null, ResponseDataDTO.class);
+        // Call the ticket rescheduling API using Feign client
+        ticketClient.rescheduleTicket(ticketId, updatedTravelDate);
 
         return new ResponseDataDTO(true, "Travel date updated successfully");
     }
