@@ -2,6 +2,7 @@ package com.yaksh.ticketms.ticket.service;
 
 import com.yaksh.ticketms.ticket.DTO.ResponseDataDTO;
 import com.yaksh.ticketms.ticket.DTO.TicketRequestDTO;
+import com.yaksh.ticketms.ticket.clients.TrainClient;
 import com.yaksh.ticketms.ticket.enums.ResponseStatus;
 import com.yaksh.ticketms.ticket.exceptions.CustomException;
 import com.yaksh.ticketms.ticket.model.FreeBookedSeatsRequestDTO;
@@ -9,15 +10,10 @@ import com.yaksh.ticketms.ticket.model.Ticket;
 import com.yaksh.ticketms.ticket.repository.TicketRepositoryV2;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.*;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -31,9 +27,7 @@ public class TicketServiceImpl implements TicketService {
 
     // Repository for accessing and manipulating ticket data in the database.
     private final TicketRepositoryV2 ticketRepositoryV2;
-    private final RestTemplate restTemplate;
-    @Value("${trainms.service.url}")
-    private String trainServiceUrl;
+    private final TrainClient trainClient;
 
     /**
      * Saves a ticket to the database.
@@ -120,23 +114,14 @@ public class TicketServiceImpl implements TicketService {
                     ResponseStatus.TICKET_NOT_FOUND);
         }
 
-        // Free up the seats in the train by calling an external service.
-        String url = trainServiceUrl + "/v1/seats/freeBookedSeats";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        // Create a request body for freeing up seats.
+        // Free up the seats in the train by calling the Feign client.
         FreeBookedSeatsRequestDTO requestDTO = new FreeBookedSeatsRequestDTO(
                 ticketFound.getTrainId(),
                 ticketFound.getBookedSeatsIndex(),
                 ticketFound.getDateOfTravel()
         );
 
-        HttpEntity<FreeBookedSeatsRequestDTO> requestEntity = new HttpEntity<>(requestDTO, headers);
-        ResponseEntity<ResponseDataDTO> freeUpSeatsResponse = restTemplate.exchange(
-                url, HttpMethod.PUT, requestEntity, ResponseDataDTO.class
-        );
+        trainClient.freeBookedSeats(requestDTO);
 
         // Delete the ticket from the database.
         ticketRepositoryV2.deleteById(ticketIdToCancel);
@@ -162,39 +147,32 @@ public class TicketServiceImpl implements TicketService {
                     ResponseStatus.TICKET_NOT_FOUND);
         }
 
-        // Check if the train can be booked for the new date by calling an external service.
-        restTemplate.exchange(trainServiceUrl + "/v1/train/canBeBooked?trainPrn="+ticketFound.getTrainId()
-                +"&source="+ticketFound.getSource()+"&destination="+ticketFound.getDestination()
-                +"&travelDate="+updatedTravelDate,HttpMethod.GET,null,ResponseDataDTO.class
+        // Check if the train can be booked for the new date using the Feign client.
+        trainClient.canTrainBeBooked(
+            ticketFound.getTrainId(),
+            ticketFound.getSource(),
+            ticketFound.getDestination(),
+            updatedTravelDate
         );
 
-        // Free up the seats in the train for the old date.
-        String url = trainServiceUrl + "/v1/seats/freeBookedSeats";
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        // Create a request body for freeing up seats.
+        // Free up the seats in the train for the old date using the Feign client.
         FreeBookedSeatsRequestDTO requestDTO = new FreeBookedSeatsRequestDTO(
                 ticketFound.getTrainId(),
                 ticketFound.getBookedSeatsIndex(),
                 ticketFound.getDateOfTravel()
         );
 
-        HttpEntity<FreeBookedSeatsRequestDTO> requestEntity = new HttpEntity<>(requestDTO, headers);
-        ResponseEntity<ResponseDataDTO> freeUpSeatsResponse = restTemplate.exchange(
-                url, HttpMethod.PUT, requestEntity, ResponseDataDTO.class
-        );
+        trainClient.freeBookedSeats(requestDTO);
 
-        // Book seats for the new date.
-        ResponseEntity<ResponseDataDTO> bookingResponse = restTemplate.exchange(
-                trainServiceUrl + "/v1/seats/bookSeats?trainPrn="+ticketFound.getTrainId()+"&travelDate="+updatedTravelDate
-                        + "&numberOfSeatsToBeBooked="+ticketFound.getBookedSeatsIndex().size(),
-                HttpMethod.POST,
-                null,
-                ResponseDataDTO.class
+        // Book seats for the new date using the Feign client.
+        ResponseDataDTO bookingResponse = trainClient.bookSeats(
+            ticketFound.getTrainId(),
+            updatedTravelDate,
+            ticketFound.getBookedSeatsIndex().size()
         );
-        List<List<Integer>> newBookedSeatsList = (List<List<Integer>>) bookingResponse.getBody().getData();
+        
+        List<List<Integer>> newBookedSeatsList = (List<List<Integer>>) bookingResponse.getData();
+        
         // Update the ticket's travel date.
         log.info("Updating the travel date in the ticket: {}", updatedTravelDate);
         ticketFound.setDateOfTravel(updatedTravelDate);

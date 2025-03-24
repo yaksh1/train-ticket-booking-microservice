@@ -20,6 +20,8 @@ ext {
 	set('springCloudVersion', "2024.0.1")
 }
 dependencies {
+	//open-feign
+	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 	//service registry - eureka client
 	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
 	// https://mvnrepository.com/artifact/org.springframework/spring-web
