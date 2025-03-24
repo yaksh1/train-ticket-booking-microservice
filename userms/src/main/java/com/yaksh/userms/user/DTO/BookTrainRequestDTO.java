@@ -1,6 +1,5 @@
 package com.yaksh.userms.user.DTO;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
