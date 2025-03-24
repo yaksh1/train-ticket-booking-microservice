@@ -7,6 +7,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 /**
  * The main class for the Ticket Management System application.
  * This class serves as the entry point for the Spring Boot application.
+ * It enables Feign clients for making REST calls to other microservices.
  */
 @SpringBootApplication
 @EnableFeignClients
