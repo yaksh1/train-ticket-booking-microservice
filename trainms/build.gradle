@@ -20,6 +20,15 @@ ext {
 	set('springCloudVersion', "2024.0.1")
 }
 dependencies {
+	// actuator
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	// feign micrometer because we are using open feign
+	// https://mvnrepository.com/artifact/io.github.openfeign/feign-micrometer
+	implementation("io.github.openfeign:feign-micrometer:13.1")
+	// micrometer (application level metrics)
+	implementation 'io.micrometer:micrometer-tracing-bridge-brave'
+	// automated distributed tracing
+	implementation 'io.zipkin.reporter2:zipkin-reporter-brave'
 	//open-feign
 	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 	//service registry - eureka client

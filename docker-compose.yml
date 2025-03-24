@@ -11,6 +11,14 @@ services:
       - mongo_data:/data/db
     networks:
       - backend
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin_container
+    restart: always
+    ports:
+      - "9411:9411"
+    networks:
+      - backend
 
   service-reg:
     build:
@@ -36,6 +44,7 @@ services:
     depends_on:
       - mongo_db
       - service-reg
+      - zipkin
     networks:
       - backend
 
@@ -51,6 +60,7 @@ services:
     depends_on:
       - mongo_db
       - service-reg
+      - zipkin
     networks:
       - backend
 
@@ -66,6 +76,7 @@ services:
     depends_on:
       - mongo_db
       - service-reg
+      - zipkin
     networks:
       - backend
 
