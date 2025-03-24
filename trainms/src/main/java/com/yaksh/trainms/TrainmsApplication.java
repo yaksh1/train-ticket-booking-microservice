@@ -2,12 +2,14 @@ package com.yaksh.trainms;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 
 /**
  * The TrainmsApplication class serves as the entry point for the Train Management System application.
  * It initializes and starts the Spring Boot application context.
  */
 @SpringBootApplication
+@EnableFeignClients
 public class TrainmsApplication {
 
     /**

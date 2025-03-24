@@ -1,6 +1,7 @@
 package com.yaksh.trainms.seatManagement.service;
 
 import com.yaksh.trainms.seatManagement.DTO.TicketRequestDTO;
+import com.yaksh.trainms.seatManagement.client.TicketClient;
 import com.yaksh.trainms.train.DTO.ResponseDataDTO;
 import com.yaksh.trainms.train.enums.ResponseStatus;
 import com.yaksh.trainms.train.exceptions.CustomException;
@@ -26,7 +27,7 @@ import java.util.*;
 public class SeatManagementServiceImpl implements SeatManagementService {
     private final TrainServiceUtil trainServiceUtil;
     private final TrainService trainService;
-    private final RestTemplate restTemplate;
+    private final TicketClient ticketClient;
     @Value("${ticketms.service.url}")
     private String ticketServiceUrl;
 
@@ -97,19 +98,10 @@ public class SeatManagementServiceImpl implements SeatManagementService {
                     .build();
             log.info("Ticket request DTO: {}", ticketRequestDTO.getUserId());
 
-            // Create headers and entity for the request
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            HttpEntity<TicketRequestDTO> requestEntity = new HttpEntity<>(ticketRequestDTO, headers);
-
             // Send the ticket booking request to the external service
-            ResponseEntity<ResponseDataDTO> ticketBookingResponse = restTemplate.exchange(
-                    ticketServiceUrl + "/v1/tickets/createTicket",
-                    HttpMethod.POST,
-                    requestEntity,
-                    ResponseDataDTO.class);
-            log.info("Ticket booking response: {}", ticketBookingResponse.getBody());
-            return ticketBookingResponse.getBody();
+            ResponseDataDTO ticketBookingResponse = ticketClient.createTicket(ticketRequestDTO);
+            log.info("Ticket booking response: {}", ticketBookingResponse);
+            return ticketBookingResponse;
         } catch (Exception e) {
             // Ticket creation failed, so roll back the seat booking
             log.error("Ticket creation failed, rolling back seat bookings: {}", e.getMessage());
