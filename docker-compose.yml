@@ -11,14 +11,6 @@ services:
       - mongo_data:/data/db
     networks:
       - backend
-  zipkin:
-    image: openzipkin/zipkin
-    container_name: zipkin_container
-    restart: always
-    ports:
-      - "9411:9411"
-    networks:
-      - backend
 
   service-reg:
     build:
@@ -28,7 +20,21 @@ services:
     ports:
       - "8761:8761"
     environment:
+      - SPRING_PROFILES_ACTIVE=service-reg-docker
+    networks:
+      - backend
+
+  config-server:
+    build:
+      context: ./config-server
+    container_name: config_server
+    restart: always
+    ports:
+      - "8085:8085"
+    environment:
       - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - service-reg
     networks:
       - backend
 
@@ -40,11 +46,12 @@ services:
     ports:
       - "8081:8081"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=userms-docker
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server:8085
     depends_on:
+      - config-server
       - mongo_db
       - service-reg
-      - zipkin
     networks:
       - backend
 
@@ -56,11 +63,12 @@ services:
     ports:
       - "8082:8082"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=trainms-docker
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server:8085
     depends_on:
+      - config-server
       - mongo_db
       - service-reg
-      - zipkin
     networks:
       - backend
 
@@ -72,11 +80,12 @@ services:
     ports:
       - "8083:8083"
     environment:
-      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_PROFILES_ACTIVE=ticketms-docker
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server:8085
     depends_on:
+      - config-server
       - mongo_db
       - service-reg
-      - zipkin
     networks:
       - backend
 
