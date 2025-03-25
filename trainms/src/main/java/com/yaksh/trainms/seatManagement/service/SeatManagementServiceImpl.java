@@ -28,8 +28,6 @@ public class SeatManagementServiceImpl implements SeatManagementService {
     private final TrainServiceUtil trainServiceUtil;
     private final TrainService trainService;
     private final TicketClient ticketClient;
-    @Value("${ticketms.service.url}")
-    private String ticketServiceUrl;
 
     /**
      * Frees previously booked seats for a train on a specific travel date.

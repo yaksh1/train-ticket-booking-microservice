@@ -20,6 +20,8 @@ ext {
 	set('springCloudVersion', "2024.0.1")
 }
 dependencies {
+	// config client
+	implementation 'org.springframework.cloud:spring-cloud-starter-config'
 	// actuator
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	// feign micrometer because we are using open feign

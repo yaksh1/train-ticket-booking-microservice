@@ -37,11 +37,6 @@ public class UserBookingServiceImpl implements UserBookingService {
     private final UserRepositoryV2 userRepositoryV2;
     private final TicketClient ticketClient;
     private final TrainClient trainClient;
-    @Value("${trainms.service.url}")
-    private String trainServiceUrl;
-    
-    @Value("${ticketms.service.url}")
-    private String ticketServiceUrl;
 
     /**
      * Sets the logged-in user.
