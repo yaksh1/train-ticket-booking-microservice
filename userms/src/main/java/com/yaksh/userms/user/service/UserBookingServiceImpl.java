@@ -13,6 +13,9 @@ import com.yaksh.userms.user.model.User;
 import com.yaksh.userms.user.repository.UserRepositoryV2;
 import com.yaksh.userms.user.util.UserServiceUtil;
 import com.yaksh.userms.user.util.ValidationChecks;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
+import io.github.resilience4j.timelimiter.annotation.TimeLimiter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
@@ -21,6 +24,7 @@ import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDate;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Service implementation for user booking-related operations.
@@ -37,6 +41,8 @@ public class UserBookingServiceImpl implements UserBookingService {
     private final UserRepositoryV2 userRepositoryV2;
     private final TicketClient ticketClient;
     private final TrainClient trainClient;
+
+    int attempt =0;
 
     /**
      * Sets the logged-in user.
@@ -77,6 +83,7 @@ public class UserBookingServiceImpl implements UserBookingService {
      */
     @Override
     public ResponseDataDTO loginUser(String userEmail, String password) {
+        log.info("Attempt: {}",++attempt);
         log.info("Login attempt for user: {}", userEmail);
         // Check if the email is valid
         if (!validationChecks.isValidEmail(userEmail.toLowerCase())) {
@@ -146,6 +153,8 @@ public class UserBookingServiceImpl implements UserBookingService {
      * @return ResponseDataDTO containing booking result.
      */
     @Override
+    @CircuitBreaker(name = "trainBookingBreaker", fallbackMethod = "trainBookingFallback")
+    @Retry(name = "trainBookingRetry", fallbackMethod = "trainBookingFallback")
     public ResponseDataDTO bookTicket(String trainPrn, String source, String destination,
                                       LocalDate dateOfTravel, int numberOfSeatsToBeBooked) {
         log.info("Booking attempt - Train: {}, Seats: {}", trainPrn, numberOfSeatsToBeBooked);
@@ -162,7 +171,6 @@ public class UserBookingServiceImpl implements UserBookingService {
         }
 
         //Book Train (Call Train Microservice API)
-        // Create a request body DTO
         BookTrainRequestDTO bookTrainRequestDTO = BookTrainRequestDTO.builder()
                 .userId(loggedInUser.getUserId())
                 .trainPrn(trainPrn)
@@ -175,14 +183,10 @@ public class UserBookingServiceImpl implements UserBookingService {
         ResponseDataDTO bookingResponse = trainClient.bookSeats(bookTrainRequestDTO);
 
         try {
-            // Get the booked ticket ID from the response
             String ticketBookedId = (String) bookingResponse.getData();
-
-            // Update the user's booked ticket list
             loggedInUser.getTicketsBookedIds().add(ticketBookedId);
             log.info("Updating logged in user ticket list");
 
-            // Save the updated user in the user database
             userRepositoryV2.save(loggedInUser);
             log.info("Saving user in the DB");
 
@@ -193,23 +197,34 @@ public class UserBookingServiceImpl implements UserBookingService {
         }
     }
 
+    public ResponseDataDTO trainBookingFallback(String trainPrn, String source, String destination,
+                                               LocalDate dateOfTravel, int numberOfSeatsToBeBooked, Exception e) {
+        log.error("Train booking fallback triggered due to: {}", e.getMessage());
+        return new ResponseDataDTO(false, "Train booking service is currently unavailable. Please try again later.");
+    }
+
     /**
      * Fetches all tickets booked by the logged-in user.
      *
      * @return ResponseDataDTO containing the list of tickets.
      */
     @Override
+    @CircuitBreaker(name = "ticketFetchBreaker", fallbackMethod = "ticketFetchFallback")
+    @Retry(name = "ticketFetchRetry", fallbackMethod = "ticketFetchFallback")
     public ResponseDataDTO fetchAllTickets() {
         log.info("Fetching all tickets for logged in user");
 
-        // Ensure the user is logged in
         if (loggedInUser == null) {
             log.warn("Unauthorized ticket fetch attempt - no logged in user");
             throw new CustomException("Please log in to book the ticket", ResponseStatus.USER_NOT_FOUND);
         }
 
-        // Call the API and return the response
         return ticketClient.fetchAllTickets(loggedInUser.getTicketsBookedIds());
+    }
+
+    public ResponseDataDTO ticketFetchFallback(Exception e) {
+        log.error("Ticket fetch fallback triggered due to: {}", e.getMessage());
+        return new ResponseDataDTO(false, "Ticket service is currently unavailable. Please try again later.");
     }
 
     /**
@@ -219,27 +234,30 @@ public class UserBookingServiceImpl implements UserBookingService {
      * @return ResponseDataDTO containing cancellation result.
      */
     @Override
+    @CircuitBreaker(name = "ticketCancelBreaker", fallbackMethod = "ticketCancelFallback")
+    @Retry(name = "ticketCancelRetry", fallbackMethod = "ticketCancelFallback")
     public ResponseDataDTO cancelTicket(String idOfTicketToCancel) {
         log.info("Cancelling ticket with ID: {}", idOfTicketToCancel);
 
-        // Ensure the user is logged in
         if (loggedInUser == null) {
             log.warn("Unauthorized ticket cancellation attempt - no logged in user");
             throw new CustomException("Please log in to book the ticket", ResponseStatus.USER_NOT_FOUND);
         }
 
-        // Call the ticket cancellation API using Feign client
         ResponseDataDTO cancelResponse = ticketClient.cancelTicket(idOfTicketToCancel);
 
-        // Remove the ticket from the user's booked list
         loggedInUser.getTicketsBookedIds().removeIf(ticketId -> ticketId.equalsIgnoreCase(idOfTicketToCancel));
         log.info("Updating logged in user ticket list");
 
-        // Save the updated user in the database
         userRepositoryV2.save(loggedInUser);
         log.info("Updating user in the DB");
 
         return new ResponseDataDTO(true, String.format("Ticket ID: %s has been deleted.", idOfTicketToCancel));
+    }
+
+    public ResponseDataDTO ticketCancelFallback(String idOfTicketToCancel, Exception e) {
+        log.error("Ticket cancellation fallback triggered due to: {}", e.getMessage());
+        return new ResponseDataDTO(false, "Ticket cancellation service is currently unavailable. Please try again later.");
     }
 
     /**
@@ -270,23 +288,26 @@ public class UserBookingServiceImpl implements UserBookingService {
      * @return ResponseDataDTO containing rescheduling result.
      */
     @Override
+    @CircuitBreaker(name = "ticketRescheduleBreaker", fallbackMethod = "ticketRescheduleFallback")
+    @Retry(name = "ticketRescheduleRetry", fallbackMethod = "ticketRescheduleFallback")
     public ResponseDataDTO rescheduleTicket(String ticketId, LocalDate updatedTravelDate) {
         log.info("Rescheduling ticket with ID: {} to new date: {}", ticketId, updatedTravelDate);
 
-        // Ensure the user is logged in
         if (loggedInUser == null) {
             log.warn("Unauthorized ticket rescheduling attempt - no logged in user");
             throw new CustomException("Please log in to book the ticket", ResponseStatus.USER_NOT_FOUND);
         }
 
-        // Ensure the new travel date is not in the past
         if (updatedTravelDate.isBefore(LocalDate.now())) {
             throw new CustomException("Date of travel cannot be in the past", ResponseStatus.INVALID_DATA);
         }
 
-        // Call the ticket rescheduling API using Feign client
         ticketClient.rescheduleTicket(ticketId, updatedTravelDate);
-
         return new ResponseDataDTO(true, "Travel date updated successfully");
+    }
+
+    public ResponseDataDTO ticketRescheduleFallback(String ticketId, LocalDate updatedTravelDate, Exception e) {
+        log.error("Ticket rescheduling fallback triggered due to: {}", e.getMessage());
+        return new ResponseDataDTO(false, "Ticket rescheduling service is currently unavailable. Please try again later.");
     }
 }
