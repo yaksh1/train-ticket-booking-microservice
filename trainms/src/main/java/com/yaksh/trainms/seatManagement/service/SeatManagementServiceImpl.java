@@ -8,6 +8,8 @@ import com.yaksh.trainms.train.exceptions.CustomException;
 import com.yaksh.trainms.train.model.Train;
 import com.yaksh.trainms.train.service.TrainService;
 import com.yaksh.trainms.train.util.TrainServiceUtil;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
@@ -37,6 +39,8 @@ public class SeatManagementServiceImpl implements SeatManagementService {
      * @param travelDate  The travel date for which seats are being freed.
      */
     @Override
+    @CircuitBreaker(name = "freeSeatsBreaker", fallbackMethod = "freeSeatsFallback")
+    @Retry(name = "freeSeatsRetry", fallbackMethod = "freeSeatsFallback")
     public void freeTheBookedSeats(List<List<Integer>> bookedSeats, String trainPrn, LocalDate travelDate) {
         // Retrieve the current seat layout for the specified train and date
         ResponseDataDTO seatsLayout = this.getSeatsAtParticularDate(trainPrn, travelDate);
@@ -61,6 +65,11 @@ public class SeatManagementServiceImpl implements SeatManagementService {
         }
     }
 
+    public void freeSeatsFallback(List<List<Integer>> bookedSeats, String trainPrn, LocalDate travelDate, Exception e) {
+        log.error("Free seats fallback triggered due to: {}", e.getMessage());
+        throw new CustomException("Failed to free seats. Please try again later.", ResponseStatus.FREE_THE_SEAT_OPERATION_FAILED);
+    }
+
     /**
      * Books seats on a train for a specific user and travel date.
      *
@@ -73,6 +82,8 @@ public class SeatManagementServiceImpl implements SeatManagementService {
      * @return ResponseDataDTO containing the booking response.
      */
     @Override
+    @CircuitBreaker(name = "bookTrainBreaker", fallbackMethod = "bookTrainFallback")
+    @Retry(name = "bookTrainRetry", fallbackMethod = "bookTrainFallback")
     public ResponseDataDTO bookTrain(String userId, String trainPrn, String source, String destination, LocalDate dateOfTravel, int numberOfSeatsToBeBooked) {
         // Check if the train can be booked and retrieve the train object
         Train train = trainService.canBeBooked(trainPrn, source, destination, dateOfTravel);
@@ -113,6 +124,11 @@ public class SeatManagementServiceImpl implements SeatManagementService {
         }
     }
 
+    public ResponseDataDTO bookTrainFallback(String userId, String trainPrn, String source, String destination, LocalDate dateOfTravel, int numberOfSeatsToBeBooked, Exception e) {
+        log.error("Book train fallback triggered due to: {}", e.getMessage());
+        return new ResponseDataDTO(false, "Train booking service is currently unavailable. Please try again later.");
+    }
+
     /**
      * Retrieves the seat layout of a train for a specific travel date.
      *
@@ -121,6 +137,8 @@ public class SeatManagementServiceImpl implements SeatManagementService {
      * @return ResponseDataDTO containing the seat layout.
      */
     @Override
+    @CircuitBreaker(name = "getSeatsBreaker", fallbackMethod = "getSeatsFallback")
+    @Retry(name = "getSeatsRetry", fallbackMethod = "getSeatsFallback")
     public ResponseDataDTO getSeatsAtParticularDate(String trainPrn, LocalDate travelDate) {
         // Retrieve the train by its PRN
         Train train = trainService.findTrainByPrn(trainPrn);
@@ -134,6 +152,11 @@ public class SeatManagementServiceImpl implements SeatManagementService {
         return new ResponseDataDTO(true, String.format("Seats of train %s fetched successfully", trainPrn), train.getSeats().get(travelDate.toString()));
     }
 
+    public ResponseDataDTO getSeatsFallback(String trainPrn, LocalDate travelDate, Exception e) {
+        log.error("Get seats fallback triggered due to: {}", e.getMessage());
+        return new ResponseDataDTO(false, "Failed to fetch seats. Please try again later.");
+    }
+
     /**
      * Books the specified number of seats for a train on a given travel date.
      *
@@ -143,6 +166,8 @@ public class SeatManagementServiceImpl implements SeatManagementService {
      * @return ResponseDataDTO containing the list of booked seat positions.
      */
     @Override
+    @CircuitBreaker(name = "bookSeatsBreaker", fallbackMethod = "bookSeatsFallback")
+    @Retry(name = "bookSeatsRetry", fallbackMethod = "bookSeatsFallback")
     public ResponseDataDTO bookSeats(String trainId, LocalDate travelDate, int numberOfSeatsToBeBooked) {
         // Retrieve the train by its PRN
         Train train = trainService.findTrainByPrn(trainId);
@@ -160,6 +185,11 @@ public class SeatManagementServiceImpl implements SeatManagementService {
         trainService.updateTrain(train);
         log.info("Updating train in the DB");
         return new ResponseDataDTO(true, "seats booked", availableSeatsList);
+    }
+
+    public ResponseDataDTO bookSeatsFallback(String trainId, LocalDate travelDate, int numberOfSeatsToBeBooked, Exception e) {
+        log.error("Book seats fallback triggered due to: {}", e.getMessage());
+        return new ResponseDataDTO(false, "Failed to book seats. Please try again later.");
     }
 
     /**

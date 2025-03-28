@@ -8,6 +8,8 @@ import com.yaksh.ticketms.ticket.exceptions.CustomException;
 import com.yaksh.ticketms.ticket.model.FreeBookedSeatsRequestDTO;
 import com.yaksh.ticketms.ticket.model.Ticket;
 import com.yaksh.ticketms.ticket.repository.TicketRepositoryV2;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,6 +38,8 @@ public class TicketServiceImpl implements TicketService {
      * @return The saved ticket object if successful, or null if an error occurs.
      */
     @Override
+    @CircuitBreaker(name = "saveTicketBreaker", fallbackMethod = "saveTicketFallback")
+    @Retry(name = "saveTicketRetry", fallbackMethod = "saveTicketFallback")
     public ResponseDataDTO saveTicket(Ticket ticketToSave) {
         try {
             // Attempt to save the ticket to the database.
@@ -52,6 +56,11 @@ public class TicketServiceImpl implements TicketService {
         }
     }
 
+    public ResponseDataDTO saveTicketFallback(Ticket ticketToSave, Exception e) {
+        log.error("Save ticket fallback triggered due to: {}", e.getMessage());
+        return new ResponseDataDTO(false, "Failed to save ticket. Please try again later.");
+    }
+
     /**
      * Finds a ticket by its unique ID.
      * 
@@ -59,6 +68,8 @@ public class TicketServiceImpl implements TicketService {
      * @return An Optional containing the ticket if found, or empty if not found.
      */
     @Override
+    @CircuitBreaker(name = "findTicketBreaker", fallbackMethod = "findTicketFallback")
+    @Retry(name = "findTicketRetry", fallbackMethod = "findTicketFallback")
     public ResponseDataDTO findTicketById(String idOfTicketToFind) {
         // Attempt to find the ticket by its ID.
         Ticket ticketFound= ticketRepositoryV2.findById(idOfTicketToFind).orElse(null);
@@ -73,6 +84,11 @@ public class TicketServiceImpl implements TicketService {
         return new ResponseDataDTO(true, "Ticket found", ticketFound);
     }
 
+    public ResponseDataDTO findTicketFallback(String idOfTicketToFind, Exception e) {
+        log.error("Find ticket fallback triggered due to: {}", e.getMessage());
+        return new ResponseDataDTO(false, "Failed to find ticket. Please try again later.");
+    }
+
     /**
      * Creates a new ticket by assigning a unique ID and saving it to the database.
      * 
@@ -80,6 +96,8 @@ public class TicketServiceImpl implements TicketService {
      * @return The response containing the saved ticket details.
      */
     @Override
+    @CircuitBreaker(name = "createTicketBreaker", fallbackMethod = "createTicketFallback")
+    @Retry(name = "createTicketRetry", fallbackMethod = "createTicketFallback")
     public ResponseDataDTO createNewTicket(TicketRequestDTO ticketRequest) {
         Ticket ticket = Ticket.builder()
                 .trainId(ticketRequest.getTrainId())
@@ -98,6 +116,11 @@ public class TicketServiceImpl implements TicketService {
         return saveTicket(ticket);
     }
 
+    public ResponseDataDTO createTicketFallback(TicketRequestDTO ticketRequest, Exception e) {
+        log.error("Create ticket fallback triggered due to: {}", e.getMessage());
+        return new ResponseDataDTO(false, "Failed to create ticket. Please try again later.");
+    }
+
     /**
      * Cancels a ticket by freeing up booked seats and deleting the ticket from the database.
      * 
@@ -105,6 +128,8 @@ public class TicketServiceImpl implements TicketService {
      * @return The response indicating the ticket cancellation status.
      */
     @Override
+    @CircuitBreaker(name = "cancelTicketBreaker", fallbackMethod = "cancelTicketFallback")
+    @Retry(name = "cancelTicketRetry", fallbackMethod = "cancelTicketFallback")
     public ResponseDataDTO cancelTicket(String ticketIdToCancel) {
         // Attempt to find the ticket by its ID.
         Ticket ticketFound = ticketRepositoryV2.findById(ticketIdToCancel).orElse(null);
@@ -130,6 +155,11 @@ public class TicketServiceImpl implements TicketService {
         return new ResponseDataDTO(true, String.format("Ticket ID: %s has been deleted.", ticketIdToCancel));
     }
 
+    public ResponseDataDTO cancelTicketFallback(String ticketIdToCancel, Exception e) {
+        log.error("Cancel ticket fallback triggered due to: {}", e.getMessage());
+        return new ResponseDataDTO(false, "Failed to cancel ticket. Please try again later.");
+    }
+
     /**
      * Reschedules a ticket to a new travel date by updating the database and external services.
      * 
@@ -138,6 +168,8 @@ public class TicketServiceImpl implements TicketService {
      * @return The response indicating the rescheduling status.
      */
     @Override
+    @CircuitBreaker(name = "rescheduleTicketBreaker", fallbackMethod = "rescheduleTicketFallback")
+    @Retry(name = "rescheduleTicketRetry", fallbackMethod = "rescheduleTicketFallback")
     public ResponseDataDTO rescheduleTicket(String ticketIdToReschedule, LocalDate updatedTravelDate) {
         // Find the ticket by its ID.
         Ticket ticketFound = ticketRepositoryV2.findById(ticketIdToReschedule).orElse(null);
@@ -188,6 +220,11 @@ public class TicketServiceImpl implements TicketService {
         return new ResponseDataDTO(true, "Travel date updated successfully");
     }
 
+    public ResponseDataDTO rescheduleTicketFallback(String ticketIdToReschedule, LocalDate updatedTravelDate, Exception e) {
+        log.error("Reschedule ticket fallback triggered due to: {}", e.getMessage());
+        return new ResponseDataDTO(false, "Failed to reschedule ticket. Please try again later.");
+    }
+
     /**
      * Fetches all tickets based on a list of ticket IDs.
      * 
@@ -195,11 +232,18 @@ public class TicketServiceImpl implements TicketService {
      * @return The response containing the list of fetched tickets.
      */
     @Override
+    @CircuitBreaker(name = "fetchTicketsBreaker", fallbackMethod = "fetchTicketsFallback")
+    @Retry(name = "fetchTicketsRetry", fallbackMethod = "fetchTicketsFallback")
     public ResponseDataDTO fetchAllTickets(List<String> ticketIds) {
         // Retrieve all tickets matching the provided IDs from the database.
         List<Ticket> tickets= ticketRepositoryV2.findAllById(ticketIds);
 
         // Return the found tickets.
         return new ResponseDataDTO(true, "Ticket found", tickets);
+    }
+
+    public ResponseDataDTO fetchTicketsFallback(List<String> ticketIds, Exception e) {
+        log.error("Fetch tickets fallback triggered due to: {}", e.getMessage());
+        return new ResponseDataDTO(false, "Failed to fetch tickets. Please try again later.");
     }
 }
