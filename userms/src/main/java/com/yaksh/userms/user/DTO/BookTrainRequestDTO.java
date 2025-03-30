@@ -43,11 +43,13 @@ public class BookTrainRequestDTO {
 
     /**
      * The date on which the user plans to travel.
+     * This should be a future date.
      */
     private LocalDate travelDate;
 
     /**
      * The number of seats the user wants to book.
+     * This value should be greater than zero.
      */
     private int numberOfSeatsToBeBooked;
 }
