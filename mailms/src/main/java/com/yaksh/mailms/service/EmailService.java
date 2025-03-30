@@ -13,8 +13,10 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.time.format.DateTimeFormatter;
 
-    @Service
+
+@Service
     public class EmailService {
         @Autowired private JavaMailSender javaMailSender;
 
@@ -30,7 +32,7 @@ import org.springframework.stereotype.Service;
 
         public ResponseDataDTO sendVerificationEmail(TicketRequestDTO ticketRequestDTO, String email) {
             String subject = "Your Train Ticket Booking Details";
-
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMMM dd, yyyy 'at' hh:mm a");
             String htmlMessage = "<html><body style=\"font-family: Arial, sans-serif; background-color: #f5f5f5; padding: 20px;\">"
                     + "<div style=\"max-width: 600px; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin: auto;\">"
                     + "<h2 style=\"color: #007bff; text-align: center;\">Train Ticket Booking Details</h2>"
@@ -39,8 +41,8 @@ import org.springframework.stereotype.Service;
                     + "<ul style=\"font-size: 16px; color: #555;\">"
                     + "<li><strong>Train ID:</strong> " + ticketRequestDTO.getTrainId() + "</li>"
                     + "<li><strong>Date of Travel:</strong> " + ticketRequestDTO.getDateOfTravel() + "</li>"
-                    + "<li><strong>Source:</strong> " + ticketRequestDTO.getSource() + " (Arrival: " + ticketRequestDTO.getArrivalTimeAtSource().toString() + ")</li>"
-                    + "<li><strong>Destination:</strong> " + ticketRequestDTO.getDestination() + " (Arrival: " + ticketRequestDTO.getReachingTimeAtDestination().toString() + ")</li>"
+                    + "<li><strong>Source:</strong> " + ticketRequestDTO.getSource() + " (Arrival: " + ticketRequestDTO.getArrivalTimeAtSource().format(formatter)  + ")</li>"
+                    + "<li><strong>Destination:</strong> " + ticketRequestDTO.getDestination() + " (Arrival: " + ticketRequestDTO.getReachingTimeAtDestination().format(formatter)  + ")</li>"
                     + "<li><strong>Booked Seats:</strong> " + ticketRequestDTO.getBookedSeatsIndex() + "</li>"
                     + "</ul>"
                     + "<p style=\"font-size: 16px; color: #333;\">If you did not request this, please ignore this email.</p>"
