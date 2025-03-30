@@ -35,7 +35,7 @@ public interface SeatManagementService {
      * @param numberOfSeatsToBeBooked The number of seats to be booked.
      * @return A ResponseDataDTO object containing booking details and status.
      */
-    ResponseDataDTO bookTrain(String userId, String trainPrn, String source, String destination, LocalDate dateOfTravel, int numberOfSeatsToBeBooked);
+    ResponseDataDTO bookTrain(String userId, String trainPrn, String source, String destination, LocalDate dateOfTravel, int numberOfSeatsToBeBooked,String email);
 
     /**
      * Frees the booked seats on a train for a specific travel date.

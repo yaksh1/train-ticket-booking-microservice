@@ -1,4 +1,4 @@
-package com.yaksh.trainms.seatManagement.DTO;
+package com.yaksh.mailms.DTO;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
@@ -33,9 +33,6 @@ public class TicketRequestDTO {
      */
     @NotNull(message = "Train ID cannot be null")
     private String trainId;
-
-    @NotNull(message = "Email cannot be null")
-    private String email;
 
     /**
      * Date of travel for the booking.

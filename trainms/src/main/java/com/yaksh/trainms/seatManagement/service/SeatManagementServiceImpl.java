@@ -84,7 +84,7 @@ public class SeatManagementServiceImpl implements SeatManagementService {
     @Override
     @CircuitBreaker(name = "bookTrainBreaker", fallbackMethod = "bookTrainFallback")
     @Retry(name = "bookTrainRetry", fallbackMethod = "bookTrainFallback")
-    public ResponseDataDTO bookTrain(String userId, String trainPrn, String source, String destination, LocalDate dateOfTravel, int numberOfSeatsToBeBooked) {
+    public ResponseDataDTO bookTrain(String userId, String trainPrn, String source, String destination, LocalDate dateOfTravel, int numberOfSeatsToBeBooked,String email) {
         // Check if the train can be booked and retrieve the train object
         Train train = trainService.canBeBooked(trainPrn, source, destination, dateOfTravel);
 
@@ -101,6 +101,7 @@ public class SeatManagementServiceImpl implements SeatManagementService {
                     .dateOfTravel(dateOfTravel)
                     .source(source)
                     .destination(destination)
+                    .email(email)
                     .bookedSeatsIndex(availableSeatsList)
                     .arrivalTimeAtSource(trainService.getArrivalAtSourceTime(train, source, dateOfTravel))
                     .reachingTimeAtDestination(trainService.getArrivalAtSourceTime(train, destination, dateOfTravel))

@@ -175,6 +175,7 @@ public class UserBookingServiceImpl implements UserBookingService {
                 .userId(loggedInUser.getUserId())
                 .trainPrn(trainPrn)
                 .source(source)
+                .userEmail(loggedInUser.getUserEmail())
                 .destination(destination)
                 .travelDate(dateOfTravel)
                 .numberOfSeatsToBeBooked(numberOfSeatsToBeBooked)

@@ -20,6 +20,7 @@ public class TicketRequestDTO {
 
     /** The ID of the user making the ticket request. */
     private String userId;
+    private String email;
 
     /** The source station from where the journey starts. */
     private String source;

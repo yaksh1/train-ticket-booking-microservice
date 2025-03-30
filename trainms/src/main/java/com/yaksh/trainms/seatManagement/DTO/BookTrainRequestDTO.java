@@ -23,6 +23,7 @@ public class BookTrainRequestDTO {
      * The unique PRN (Passenger Reservation Number) of the train to be booked.
      */
     private String trainPrn;
+    private String userEmail;
 
     /**
      * The source station from where the journey begins.

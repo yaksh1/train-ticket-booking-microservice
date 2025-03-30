@@ -2,6 +2,7 @@ package com.yaksh.ticketms.ticket.service;
 
 import com.yaksh.ticketms.ticket.DTO.ResponseDataDTO;
 import com.yaksh.ticketms.ticket.DTO.TicketRequestDTO;
+import com.yaksh.ticketms.ticket.clients.EmailClient;
 import com.yaksh.ticketms.ticket.clients.TrainClient;
 import com.yaksh.ticketms.ticket.enums.ResponseStatus;
 import com.yaksh.ticketms.ticket.exceptions.CustomException;
@@ -30,6 +31,7 @@ public class TicketServiceImpl implements TicketService {
     // Repository for accessing and manipulating ticket data in the database.
     private final TicketRepositoryV2 ticketRepositoryV2;
     private final TrainClient trainClient;
+    private final EmailClient emailClient;
 
     /**
      * Saves a ticket to the database.
@@ -40,13 +42,16 @@ public class TicketServiceImpl implements TicketService {
     @Override
     @CircuitBreaker(name = "saveTicketBreaker", fallbackMethod = "saveTicketFallback")
     @Retry(name = "saveTicketRetry", fallbackMethod = "saveTicketFallback")
-    public ResponseDataDTO saveTicket(Ticket ticketToSave) {
+    public ResponseDataDTO saveTicket(Ticket ticketToSave,String email) {
         try {
             // Attempt to save the ticket to the database.
             Ticket ticket = ticketRepositoryV2.save(ticketToSave);
 
             // Log success if the ticket is saved successfully.
             log.info("Ticket saved successfully with id: {}", ticket.getTicketId());
+            // send email
+            ResponseDataDTO responseDataDTO = emailClient.sendEmail(ticketToSave,email);
+            log.info(responseDataDTO.toString());
             return new ResponseDataDTO(true,"Ticket saved in the DB: "+ ticket.getTicketId(),ticket.getTicketId());
         } catch (Exception e) {
             // Log any exceptions that occur during the save operation.
@@ -112,8 +117,9 @@ public class TicketServiceImpl implements TicketService {
         // Generate a new unique ticket ID.
         ticket.setTicketId(UUID.randomUUID().toString());
         log.info("Creating new ticket: {}", ticket);
+
         // Save the newly created ticket to the database and return it.
-        return saveTicket(ticket);
+        return saveTicket(ticket,ticketRequest.getEmail());
     }
 
     public ResponseDataDTO createTicketFallback(TicketRequestDTO ticketRequest, Exception e) {

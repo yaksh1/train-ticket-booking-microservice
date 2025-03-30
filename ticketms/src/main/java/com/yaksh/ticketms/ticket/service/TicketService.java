@@ -22,7 +22,7 @@ public interface TicketService {
      * @param ticketToSave the ticket object to be saved.
      * @return a ResponseDataDTO containing the result of the save operation.
      */
-    ResponseDataDTO saveTicket(Ticket ticketToSave);
+    ResponseDataDTO saveTicket(Ticket ticketToSave,String email);
 
     /**
      * Finds a ticket by its unique ID.

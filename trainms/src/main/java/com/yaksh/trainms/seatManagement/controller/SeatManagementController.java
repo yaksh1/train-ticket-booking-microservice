@@ -43,7 +43,8 @@ public class SeatManagementController {
                 requestDTO.getSource(),
                 requestDTO.getDestination(),
                 requestDTO.getTravelDate(),
-                requestDTO.getNumberOfSeatsToBeBooked()
+                requestDTO.getNumberOfSeatsToBeBooked(),
+                requestDTO.getUserEmail()
         ));
     }
 
