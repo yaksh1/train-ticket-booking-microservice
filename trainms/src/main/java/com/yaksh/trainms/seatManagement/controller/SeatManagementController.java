@@ -63,8 +63,17 @@ public class SeatManagementController {
         return ResponseEntity.ok(new ResponseDataDTO(true, "Seats freed successfully", null));
     }
 
+    /**
+     * Endpoint to book a specific number of seats on a train.
+     *
+     * @param trainPrn the unique identifier of the train.
+     * @param travelDate the date of travel for which the seats are to be booked.
+     * @param numberOfSeatsToBeBooked the number of seats to book.
+     * @return a ResponseEntity containing a ResponseDataDTO with booking details.
+     */
     @PostMapping("/bookSeats")
-    public ResponseEntity<ResponseDataDTO> bookSeats(@RequestParam String trainPrn,@RequestParam LocalDate travelDate,@RequestParam int numberOfSeatsToBeBooked){
-        return ResponseEntity.ok(seatManagementService.bookSeats(trainPrn,travelDate,numberOfSeatsToBeBooked));
+    public ResponseEntity<ResponseDataDTO> bookSeats(@RequestParam String trainPrn, @RequestParam LocalDate travelDate, @RequestParam int numberOfSeatsToBeBooked) {
+        // Delegates the seat booking request to the service layer with the provided details.
+        return ResponseEntity.ok(seatManagementService.bookSeats(trainPrn, travelDate, numberOfSeatsToBeBooked));
     }
 }

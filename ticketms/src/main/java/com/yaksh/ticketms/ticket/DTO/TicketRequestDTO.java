@@ -20,6 +20,8 @@ public class TicketRequestDTO {
 
     /** The ID of the user making the ticket request. */
     private String userId;
+
+    /** The email address of the user making the ticket request. */
     private String email;
 
     /** The source station from where the journey starts. */
@@ -34,6 +36,7 @@ public class TicketRequestDTO {
     /** 
      * A list of seat indices that the user intends to book.
      * Each sub-list represents a group of seats booked together.
+     * For example, if a family books seats together, their indices will be in the same sub-list.
      */
     private List<List<Integer>> bookedSeatsIndex;
 

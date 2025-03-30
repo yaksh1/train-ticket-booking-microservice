@@ -20,9 +20,10 @@ public interface TicketService {
      * Saves a ticket to the database or storage.
      * 
      * @param ticketToSave the ticket object to be saved.
+     * @param email the email of the user associated with the ticket.
      * @return a ResponseDataDTO containing the result of the save operation.
      */
-    ResponseDataDTO saveTicket(Ticket ticketToSave,String email);
+    ResponseDataDTO saveTicket(Ticket ticketToSave, String email);
 
     /**
      * Finds a ticket by its unique ID.

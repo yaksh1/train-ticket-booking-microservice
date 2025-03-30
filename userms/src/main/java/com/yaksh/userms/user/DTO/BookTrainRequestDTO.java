@@ -25,6 +25,10 @@ public class BookTrainRequestDTO {
      * The unique PRN (Passenger Reservation Number) of the train to be booked.
      */
     private String trainPrn;
+
+    /**
+     * The email address of the user making the booking.
+     */
     private String userEmail;
 
     /**

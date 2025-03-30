@@ -8,8 +8,8 @@ import org.springframework.http.HttpStatus;
  */
 public enum ResponseStatus {
 
-    // mail
-    MAIL_NOT_SENT(HttpStatus.INTERNAL_SERVER_ERROR,"Error while sending mail");
+    // Represents a failure status when an email could not be sent
+    MAIL_NOT_SENT(HttpStatus.INTERNAL_SERVER_ERROR, "Error while sending mail");
 
     private final HttpStatus httpStatus; // HTTP status code associated with the response
     private final String message; // Descriptive message for the response status

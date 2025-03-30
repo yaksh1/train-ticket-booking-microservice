@@ -4,9 +4,7 @@ import com.yaksh.trainms.train.DTO.ResponseDataDTO;
 import com.yaksh.trainms.train.model.Train;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Interface for managing seat-related operations in the train management system.
@@ -33,9 +31,10 @@ public interface SeatManagementService {
      * @param destination The destination station for the journey.
      * @param dateOfTravel The date of travel for the booking.
      * @param numberOfSeatsToBeBooked The number of seats to be booked.
+     * @param email The email address of the user for notification purposes.
      * @return A ResponseDataDTO object containing booking details and status.
      */
-    ResponseDataDTO bookTrain(String userId, String trainPrn, String source, String destination, LocalDate dateOfTravel, int numberOfSeatsToBeBooked,String email);
+    ResponseDataDTO bookTrain(String userId, String trainPrn, String source, String destination, LocalDate dateOfTravel, int numberOfSeatsToBeBooked, String email);
 
     /**
      * Frees the booked seats on a train for a specific travel date.
@@ -55,6 +54,15 @@ public interface SeatManagementService {
      */
     ResponseDataDTO getSeatsAtParticularDate(String trainPrn, LocalDate travelDate);
 
-    ResponseDataDTO bookSeats(String trainId,LocalDate travelDate,int numberOfSeatsToBeBooked);
+    /**
+     * Books seats on a train for a specific travel date without specifying user details.
+     * This method is likely used for internal or automated booking processes.
+     *
+     * @param trainId The unique identifier of the train.
+     * @param travelDate The date of travel for which the booking is being made.
+     * @param numberOfSeatsToBeBooked The number of seats to be booked.
+     * @return A ResponseDataDTO object containing booking details and status.
+     */
+    ResponseDataDTO bookSeats(String trainId, LocalDate travelDate, int numberOfSeatsToBeBooked);
 
 }

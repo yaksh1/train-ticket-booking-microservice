@@ -34,6 +34,10 @@ public class TicketRequestDTO {
     @NotNull(message = "Train ID cannot be null")
     private String trainId;
 
+    /**
+     * Email address of the user making the booking.
+     * Must not be null.
+     */
     @NotNull(message = "Email cannot be null")
     private String email;
 

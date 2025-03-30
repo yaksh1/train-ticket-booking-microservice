@@ -42,7 +42,7 @@ public class UserBookingServiceImpl implements UserBookingService {
     private final TicketClient ticketClient;
     private final TrainClient trainClient;
 
-    int attempt =0;
+    int attempt = 0;
 
     /**
      * Sets the logged-in user.
@@ -83,7 +83,7 @@ public class UserBookingServiceImpl implements UserBookingService {
      */
     @Override
     public ResponseDataDTO loginUser(String userEmail, String password) {
-        log.info("Attempt: {}",++attempt);
+        log.info("Attempt: {}", ++attempt);
         log.info("Login attempt for user: {}", userEmail);
         // Check if the email is valid
         if (!validationChecks.isValidEmail(userEmail.toLowerCase())) {
@@ -98,9 +98,9 @@ public class UserBookingServiceImpl implements UserBookingService {
                     }
                     this.loggedInUser = user;
                     // Fetch all tickets associated with the user
-                    List<Ticket> allTickets =(List<Ticket>) fetchAllTickets().getData();
+                    List<Ticket> allTickets = (List<Ticket>) fetchAllTickets().getData();
                     // Convert user and tickets to DTO
-                    UserWithTicketDTO userWithTicketDTO = UserWithTicketDTOMapper.convertToUserWithTicketDTO(user,allTickets);
+                    UserWithTicketDTO userWithTicketDTO = UserWithTicketDTOMapper.convertToUserWithTicketDTO(user, allTickets);
                     return new ResponseDataDTO(true, "User Found", userWithTicketDTO);
                 })
                 .orElseThrow(() -> new CustomException(ResponseStatus.USER_NOT_FOUND));
@@ -170,7 +170,7 @@ public class UserBookingServiceImpl implements UserBookingService {
             throw new CustomException("Date of travel cannot be in the past", ResponseStatus.INVALID_DATA);
         }
 
-        //Book Train (Call Train Microservice API)
+        // Book Train (Call Train Microservice API)
         BookTrainRequestDTO bookTrainRequestDTO = BookTrainRequestDTO.builder()
                 .userId(loggedInUser.getUserId())
                 .trainPrn(trainPrn)
@@ -199,7 +199,7 @@ public class UserBookingServiceImpl implements UserBookingService {
     }
 
     public ResponseDataDTO trainBookingFallback(String trainPrn, String source, String destination,
-                                               LocalDate dateOfTravel, int numberOfSeatsToBeBooked, Exception e) {
+                                                LocalDate dateOfTravel, int numberOfSeatsToBeBooked, Exception e) {
         log.error("Train booking fallback triggered due to: {}", e.getMessage());
         return new ResponseDataDTO(false, "Train booking service is currently unavailable. Please try again later.");
     }

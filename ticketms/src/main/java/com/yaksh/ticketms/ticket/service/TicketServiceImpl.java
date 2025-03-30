@@ -37,30 +37,39 @@ public class TicketServiceImpl implements TicketService {
      * Saves a ticket to the database.
      * 
      * @param ticketToSave The ticket object to be saved.
+     * @param email The email address to send notifications.
      * @return The saved ticket object if successful, or null if an error occurs.
      */
     @Override
     @CircuitBreaker(name = "saveTicketBreaker", fallbackMethod = "saveTicketFallback")
     @Retry(name = "saveTicketRetry", fallbackMethod = "saveTicketFallback")
-    public ResponseDataDTO saveTicket(Ticket ticketToSave,String email) {
+    public ResponseDataDTO saveTicket(Ticket ticketToSave, String email) {
         try {
             // Attempt to save the ticket to the database.
             Ticket ticket = ticketRepositoryV2.save(ticketToSave);
 
             // Log success if the ticket is saved successfully.
             log.info("Ticket saved successfully with id: {}", ticket.getTicketId());
-            // send email
-            ResponseDataDTO responseDataDTO = emailClient.sendEmail(ticketToSave,email);
+
+            // Send email notification using the EmailClient.
+            ResponseDataDTO responseDataDTO = emailClient.sendEmail(ticketToSave, email);
             log.info(responseDataDTO.toString());
-            return new ResponseDataDTO(true,"Ticket saved in the DB: "+ ticket.getTicketId(),ticket.getTicketId());
+            return new ResponseDataDTO(true, "Ticket saved in the DB: " + ticket.getTicketId(), ticket.getTicketId());
         } catch (Exception e) {
             // Log any exceptions that occur during the save operation.
             log.error("Error while saving ticket: {}", e.getMessage());
-            throw new CustomException("Error while saving ticket: "+e.getMessage(),
+            throw new CustomException("Error while saving ticket: " + e.getMessage(),
                     ResponseStatus.TICKET_NOT_SAVED_IN_COLLECTION);
         }
     }
 
+    /**
+     * Fallback method for saveTicket in case of failure.
+     * 
+     * @param ticketToSave The ticket object that failed to save.
+     * @param e The exception that triggered the fallback.
+     * @return A failure response.
+     */
     public ResponseDataDTO saveTicketFallback(Ticket ticketToSave, Exception e) {
         log.error("Save ticket fallback triggered due to: {}", e.getMessage());
         return new ResponseDataDTO(false, "Failed to save ticket. Please try again later.");
@@ -70,14 +79,14 @@ public class TicketServiceImpl implements TicketService {
      * Finds a ticket by its unique ID.
      * 
      * @param idOfTicketToFind The unique ID of the ticket to find.
-     * @return An Optional containing the ticket if found, or empty if not found.
+     * @return A ResponseDataDTO containing the ticket if found, or an error response if not found.
      */
     @Override
     @CircuitBreaker(name = "findTicketBreaker", fallbackMethod = "findTicketFallback")
     @Retry(name = "findTicketRetry", fallbackMethod = "findTicketFallback")
     public ResponseDataDTO findTicketById(String idOfTicketToFind) {
         // Attempt to find the ticket by its ID.
-        Ticket ticketFound= ticketRepositoryV2.findById(idOfTicketToFind).orElse(null);
+        Ticket ticketFound = ticketRepositoryV2.findById(idOfTicketToFind).orElse(null);
         if (ticketFound == null) {
             // Log a warning if the ticket is not found.
             log.warn("Ticket not found: {}", idOfTicketToFind);
@@ -89,6 +98,13 @@ public class TicketServiceImpl implements TicketService {
         return new ResponseDataDTO(true, "Ticket found", ticketFound);
     }
 
+    /**
+     * Fallback method for findTicketById in case of failure.
+     * 
+     * @param idOfTicketToFind The ticket ID that was not found.
+     * @param e The exception that triggered the fallback.
+     * @return A failure response.
+     */
     public ResponseDataDTO findTicketFallback(String idOfTicketToFind, Exception e) {
         log.error("Find ticket fallback triggered due to: {}", e.getMessage());
         return new ResponseDataDTO(false, "Failed to find ticket. Please try again later.");
@@ -104,6 +120,7 @@ public class TicketServiceImpl implements TicketService {
     @CircuitBreaker(name = "createTicketBreaker", fallbackMethod = "createTicketFallback")
     @Retry(name = "createTicketRetry", fallbackMethod = "createTicketFallback")
     public ResponseDataDTO createNewTicket(TicketRequestDTO ticketRequest) {
+        // Build a new Ticket object using the details from the request DTO.
         Ticket ticket = Ticket.builder()
                 .trainId(ticketRequest.getTrainId())
                 .userId(ticketRequest.getUserId())
@@ -114,14 +131,22 @@ public class TicketServiceImpl implements TicketService {
                 .arrivalTimeAtSource(ticketRequest.getArrivalTimeAtSource())
                 .reachingTimeAtDestination(ticketRequest.getReachingTimeAtDestination())
                 .build();
+
         // Generate a new unique ticket ID.
         ticket.setTicketId(UUID.randomUUID().toString());
         log.info("Creating new ticket: {}", ticket);
 
         // Save the newly created ticket to the database and return it.
-        return saveTicket(ticket,ticketRequest.getEmail());
+        return saveTicket(ticket, ticketRequest.getEmail());
     }
 
+    /**
+     * Fallback method for createNewTicket in case of failure.
+     * 
+     * @param ticketRequest The ticket request that failed to process.
+     * @param e The exception that triggered the fallback.
+     * @return A failure response.
+     */
     public ResponseDataDTO createTicketFallback(TicketRequestDTO ticketRequest, Exception e) {
         log.error("Create ticket fallback triggered due to: {}", e.getMessage());
         return new ResponseDataDTO(false, "Failed to create ticket. Please try again later.");
@@ -139,7 +164,7 @@ public class TicketServiceImpl implements TicketService {
     public ResponseDataDTO cancelTicket(String ticketIdToCancel) {
         // Attempt to find the ticket by its ID.
         Ticket ticketFound = ticketRepositoryV2.findById(ticketIdToCancel).orElse(null);
-        if(ticketFound == null){
+        if (ticketFound == null) {
             // Throw an exception if the ticket is not found.
             throw new CustomException(String.format("Ticket ID: %s not found", ticketIdToCancel),
                     ResponseStatus.TICKET_NOT_FOUND);
@@ -161,6 +186,13 @@ public class TicketServiceImpl implements TicketService {
         return new ResponseDataDTO(true, String.format("Ticket ID: %s has been deleted.", ticketIdToCancel));
     }
 
+    /**
+     * Fallback method for cancelTicket in case of failure.
+     * 
+     * @param ticketIdToCancel The ticket ID that failed to cancel.
+     * @param e The exception that triggered the fallback.
+     * @return A failure response.
+     */
     public ResponseDataDTO cancelTicketFallback(String ticketIdToCancel, Exception e) {
         log.error("Cancel ticket fallback triggered due to: {}", e.getMessage());
         return new ResponseDataDTO(false, "Failed to cancel ticket. Please try again later.");
@@ -187,10 +219,10 @@ public class TicketServiceImpl implements TicketService {
 
         // Check if the train can be booked for the new date using the Feign client.
         trainClient.canTrainBeBooked(
-            ticketFound.getTrainId(),
-            ticketFound.getSource(),
-            ticketFound.getDestination(),
-            updatedTravelDate
+                ticketFound.getTrainId(),
+                ticketFound.getSource(),
+                ticketFound.getDestination(),
+                updatedTravelDate
         );
 
         // Free up the seats in the train for the old date using the Feign client.
@@ -204,13 +236,13 @@ public class TicketServiceImpl implements TicketService {
 
         // Book seats for the new date using the Feign client.
         ResponseDataDTO bookingResponse = trainClient.bookSeats(
-            ticketFound.getTrainId(),
-            updatedTravelDate,
-            ticketFound.getBookedSeatsIndex().size()
+                ticketFound.getTrainId(),
+                updatedTravelDate,
+                ticketFound.getBookedSeatsIndex().size()
         );
-        
+
         List<List<Integer>> newBookedSeatsList = (List<List<Integer>>) bookingResponse.getData();
-        
+
         // Update the ticket's travel date.
         log.info("Updating the travel date in the ticket: {}", updatedTravelDate);
         ticketFound.setDateOfTravel(updatedTravelDate);
@@ -226,6 +258,14 @@ public class TicketServiceImpl implements TicketService {
         return new ResponseDataDTO(true, "Travel date updated successfully");
     }
 
+    /**
+     * Fallback method for rescheduleTicket in case of failure.
+     * 
+     * @param ticketIdToReschedule The ticket ID that failed to reschedule.
+     * @param updatedTravelDate The new travel date.
+     * @param e The exception that triggered the fallback.
+     * @return A failure response.
+     */
     public ResponseDataDTO rescheduleTicketFallback(String ticketIdToReschedule, LocalDate updatedTravelDate, Exception e) {
         log.error("Reschedule ticket fallback triggered due to: {}", e.getMessage());
         return new ResponseDataDTO(false, "Failed to reschedule ticket. Please try again later.");
@@ -242,12 +282,19 @@ public class TicketServiceImpl implements TicketService {
     @Retry(name = "fetchTicketsRetry", fallbackMethod = "fetchTicketsFallback")
     public ResponseDataDTO fetchAllTickets(List<String> ticketIds) {
         // Retrieve all tickets matching the provided IDs from the database.
-        List<Ticket> tickets= ticketRepositoryV2.findAllById(ticketIds);
+        List<Ticket> tickets = ticketRepositoryV2.findAllById(ticketIds);
 
         // Return the found tickets.
         return new ResponseDataDTO(true, "Ticket found", tickets);
     }
 
+    /**
+     * Fallback method for fetchAllTickets in case of failure.
+     * 
+     * @param ticketIds The list of ticket IDs that failed to fetch.
+     * @param e The exception that triggered the fallback.
+     * @return A failure response.
+     */
     public ResponseDataDTO fetchTicketsFallback(List<String> ticketIds, Exception e) {
         log.error("Fetch tickets fallback triggered due to: {}", e.getMessage());
         return new ResponseDataDTO(false, "Failed to fetch tickets. Please try again later.");
