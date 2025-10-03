@@ -2,6 +2,7 @@ package com.yaksh.mailms;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
 /**
@@ -10,6 +11,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
  */
 @SpringBootApplication // Indicates that this is a Spring Boot application.
 @EnableFeignClients // Enables Feign clients in the application for inter-service communication.
+@EnableDiscoveryClient
 public class MailmsApplication {
 
     /**

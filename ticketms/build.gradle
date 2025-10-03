@@ -20,6 +20,7 @@ ext {
 	set('springCloudVersion', "2024.0.1")
 }
 dependencies {
+
 	// aspect oriented program
 	implementation("org.springframework.boot:spring-boot-starter-aop:3.4.1")
 	// resilience4j

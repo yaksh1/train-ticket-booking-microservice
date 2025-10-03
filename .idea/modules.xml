@@ -2,7 +2,11 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/mailms.main.iml" filepath="$PROJECT_DIR$/.idea/modules/mailms.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/ticketms.main.iml" filepath="$PROJECT_DIR$/.idea/modules/ticketms.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/train-ticket-microservice.iml" filepath="$PROJECT_DIR$/.idea/train-ticket-microservice.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/trainms.main.iml" filepath="$PROJECT_DIR$/.idea/modules/trainms.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/userms.main.iml" filepath="$PROJECT_DIR$/.idea/modules/userms.main.iml" />
     </modules>
   </component>
 </project>

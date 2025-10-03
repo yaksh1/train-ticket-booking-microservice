@@ -1,5 +1,6 @@
 package com.yaksh.ticketms.ticket.service;
 
+import com.yaksh.ticketms.ticket.DTO.EmailMessageDTO;
 import com.yaksh.ticketms.ticket.DTO.ResponseDataDTO;
 import com.yaksh.ticketms.ticket.DTO.TicketRequestDTO;
 import com.yaksh.ticketms.ticket.clients.EmailClient;
@@ -13,6 +14,8 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+//import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -20,7 +23,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * This service class handles all ticket-related operations, such as saving, retrieving, deleting, 
+ * This service class handles all ticket-related operations, such as saving, retrieving, deleting,
  * and creating new tickets. It acts as the business logic layer for managing train tickets.
  */
 @Service
@@ -33,9 +36,14 @@ public class TicketServiceImpl implements TicketService {
     private final TrainClient trainClient;
     private final EmailClient emailClient;
 
+//    private final RabbitTemp rabbitTemplate;
+
+//    @Value("${rabbitmq.queue.email}")
+//    private String emailQueue;
+
     /**
      * Saves a ticket to the database.
-     * 
+     *
      * @param ticketToSave The ticket object to be saved.
      * @param email The email address to send notifications.
      * @return The saved ticket object if successful, or null if an error occurs.
@@ -53,7 +61,14 @@ public class TicketServiceImpl implements TicketService {
 
             // Send email notification using the EmailClient.
             ResponseDataDTO responseDataDTO = emailClient.sendEmail(ticketToSave, email);
-            log.info(responseDataDTO.toString());
+            if(!responseDataDTO.isStatus()){
+                return responseDataDTO;
+            }
+            // Create an EmailMessageDTO to send via RabbitMQ
+            EmailMessageDTO emailMessage = new EmailMessageDTO(ticketToSave, email);
+//            log.info("Email request published to RabbitMQ for email: {}", email);
+//            // Publish the message to RabbitMQ
+//            rabbitTemplate.convertAndSend("email-queue", emailMessage);
             return new ResponseDataDTO(true, "Ticket saved in the DB: " + ticket.getTicketId(), ticket.getTicketId());
         } catch (Exception e) {
             // Log any exceptions that occur during the save operation.
@@ -65,7 +80,7 @@ public class TicketServiceImpl implements TicketService {
 
     /**
      * Fallback method for saveTicket in case of failure.
-     * 
+     *
      * @param ticketToSave The ticket object that failed to save.
      * @param e The exception that triggered the fallback.
      * @return A failure response.
@@ -77,7 +92,7 @@ public class TicketServiceImpl implements TicketService {
 
     /**
      * Finds a ticket by its unique ID.
-     * 
+     *
      * @param idOfTicketToFind The unique ID of the ticket to find.
      * @return A ResponseDataDTO containing the ticket if found, or an error response if not found.
      */
@@ -100,7 +115,7 @@ public class TicketServiceImpl implements TicketService {
 
     /**
      * Fallback method for findTicketById in case of failure.
-     * 
+     *
      * @param idOfTicketToFind The ticket ID that was not found.
      * @param e The exception that triggered the fallback.
      * @return A failure response.
@@ -112,7 +127,7 @@ public class TicketServiceImpl implements TicketService {
 
     /**
      * Creates a new ticket by assigning a unique ID and saving it to the database.
-     * 
+     *
      * @param ticketRequest The ticket request object containing ticket details.
      * @return The response containing the saved ticket details.
      */
@@ -142,7 +157,7 @@ public class TicketServiceImpl implements TicketService {
 
     /**
      * Fallback method for createNewTicket in case of failure.
-     * 
+     *
      * @param ticketRequest The ticket request that failed to process.
      * @param e The exception that triggered the fallback.
      * @return A failure response.
@@ -154,7 +169,7 @@ public class TicketServiceImpl implements TicketService {
 
     /**
      * Cancels a ticket by freeing up booked seats and deleting the ticket from the database.
-     * 
+     *
      * @param ticketIdToCancel The unique ID of the ticket to cancel.
      * @return The response indicating the ticket cancellation status.
      */
@@ -188,7 +203,7 @@ public class TicketServiceImpl implements TicketService {
 
     /**
      * Fallback method for cancelTicket in case of failure.
-     * 
+     *
      * @param ticketIdToCancel The ticket ID that failed to cancel.
      * @param e The exception that triggered the fallback.
      * @return A failure response.
@@ -200,7 +215,7 @@ public class TicketServiceImpl implements TicketService {
 
     /**
      * Reschedules a ticket to a new travel date by updating the database and external services.
-     * 
+     *
      * @param ticketIdToReschedule The unique ID of the ticket to reschedule.
      * @param updatedTravelDate The new travel date.
      * @return The response indicating the rescheduling status.
@@ -260,7 +275,7 @@ public class TicketServiceImpl implements TicketService {
 
     /**
      * Fallback method for rescheduleTicket in case of failure.
-     * 
+     *
      * @param ticketIdToReschedule The ticket ID that failed to reschedule.
      * @param updatedTravelDate The new travel date.
      * @param e The exception that triggered the fallback.
@@ -273,7 +288,7 @@ public class TicketServiceImpl implements TicketService {
 
     /**
      * Fetches all tickets based on a list of ticket IDs.
-     * 
+     *
      * @param ticketIds The list of ticket IDs to fetch.
      * @return The response containing the list of fetched tickets.
      */
@@ -281,6 +296,7 @@ public class TicketServiceImpl implements TicketService {
     @CircuitBreaker(name = "fetchTicketsBreaker", fallbackMethod = "fetchTicketsFallback")
     @Retry(name = "fetchTicketsRetry", fallbackMethod = "fetchTicketsFallback")
     public ResponseDataDTO fetchAllTickets(List<String> ticketIds) {
+        log.info("In ticket Service - fetching all tickets");
         // Retrieve all tickets matching the provided IDs from the database.
         List<Ticket> tickets = ticketRepositoryV2.findAllById(ticketIds);
 
@@ -290,7 +306,7 @@ public class TicketServiceImpl implements TicketService {
 
     /**
      * Fallback method for fetchAllTickets in case of failure.
-     * 
+     *
      * @param ticketIds The list of ticket IDs that failed to fetch.
      * @param e The exception that triggered the fallback.
      * @return A failure response.

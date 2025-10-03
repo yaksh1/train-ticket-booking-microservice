@@ -201,7 +201,7 @@ public class UserBookingServiceImpl implements UserBookingService {
     public ResponseDataDTO trainBookingFallback(String trainPrn, String source, String destination,
                                                 LocalDate dateOfTravel, int numberOfSeatsToBeBooked, Exception e) {
         log.error("Train booking fallback triggered due to: {}", e.getMessage());
-        return new ResponseDataDTO(false, "Train booking service is currently unavailable. Please try again later.");
+        return new ResponseDataDTO(false, e.getMessage());
     }
 
     /**

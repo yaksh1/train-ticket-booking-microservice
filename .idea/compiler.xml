@@ -7,8 +7,33 @@
         <processorPath useClasspath="false">
           <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.projectlombok/lombok/1.18.36/5a30490a6e14977d97d9c73c924c1f1b5311ea95/lombok-1.18.36.jar" />
         </processorPath>
-        <module name="mailms.main" />
+        <module name="userms.main" />
       </profile>
     </annotationProcessing>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="config-server" options="-parameters" />
+      <module name="config-server.main" options="-parameters" />
+      <module name="config-server.test" options="-parameters" />
+      <module name="gateway" options="-parameters" />
+      <module name="gateway.main" options="-parameters" />
+      <module name="gateway.test" options="-parameters" />
+      <module name="mailms" options="-parameters" />
+      <module name="mailms.main" options="-parameters" />
+      <module name="mailms.test" options="-parameters" />
+      <module name="service-reg" options="-parameters" />
+      <module name="service-reg.main" options="-parameters" />
+      <module name="service-reg.test" options="-parameters" />
+      <module name="ticketms" options="-parameters" />
+      <module name="ticketms.main" options="-parameters" />
+      <module name="ticketms.test" options="-parameters" />
+      <module name="trainms" options="-parameters" />
+      <module name="trainms.main" options="-parameters" />
+      <module name="trainms.test" options="-parameters" />
+      <module name="userms" options="-parameters" />
+      <module name="userms.main" options="-parameters" />
+      <module name="userms.test" options="-parameters" />
+    </option>
   </component>
 </project>

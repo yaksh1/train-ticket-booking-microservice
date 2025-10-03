@@ -71,6 +71,26 @@ services:
     networks:
       - backend
 
+  mailms:
+    build:
+      context: ./mailms
+    container_name: mailms_container
+    restart: always
+    ports:
+      - "8086:8086"
+    env_file:
+      - .env
+    environment:
+      - SPRING_PROFILES_ACTIVE=mailms-docker
+      - SUPPORT_EMAIL=${SUPPORT_EMAIL}
+      - APP_PASSWORD=${APP_PASSWORD}
+    depends_on:
+      - config-server
+      - mongo_db
+      - service-reg
+    networks:
+      - backend
+
   trainms:
     build:
       context: ./trainms
